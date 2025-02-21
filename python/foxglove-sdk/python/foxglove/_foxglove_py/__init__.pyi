@@ -45,8 +45,8 @@ class BaseChannel:
     def log(
         self,
         msg: bytes,
-        publish_time: Optional[int] = None,
         log_time: Optional[int] = None,
+        publish_time: Optional[int] = None,
         sequence: Optional[int] = None,
     ) -> None: ...
 

@@ -103,12 +103,12 @@ impl BaseChannel {
         Ok(BaseChannel(channel))
     }
 
-    #[pyo3(signature = (msg, publish_time=None, log_time=None, sequence=None))]
+    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &[u8],
-        publish_time: Option<u64>,
         log_time: Option<u64>,
+        publish_time: Option<u64>,
         sequence: Option<u32>,
     ) -> PyResult<()> {
         let metadata = foxglove::PartialMetadata {

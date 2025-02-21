@@ -71,7 +71,13 @@ class Channel:
 
         _channels_by_topic[topic] = self
 
-    def log(self, msg: Union[JsonMessage, bytes]) -> None:
+    def log(
+        self,
+        msg: Union[JsonMessage, bytes],
+        log_time: Optional[int] = None,
+        publish_time: Optional[int] = None,
+        sequence: Optional[int] = None,
+    ) -> None:
         """
         Log a message on the channel.
 
@@ -79,10 +85,12 @@ class Channel:
             dictionary. Otherwise, you are responsible for serializing the message.
         """
         if isinstance(msg, bytes):
-            return self.base.log(msg)
+            return self.base.log(msg, log_time, publish_time, sequence)
 
         if self.message_encoding == "json":
-            return self.base.log(json.dumps(msg).encode("utf-8"))
+            return self.base.log(
+                json.dumps(msg).encode("utf-8"), log_time, publish_time, sequence
+            )
 
         raise ValueError(f"Unsupported message type: {type(msg)}")
 
