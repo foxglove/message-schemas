@@ -4,7 +4,9 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 use crate::websocket::service::{Service, ServiceId};
-use crate::websocket::{create_server, Capability, Parameter, Server, ServerOptions, Status};
+use crate::websocket::{
+    create_server, Capability, ConnectionGraph, Parameter, Server, ServerOptions, Status,
+};
 use crate::{get_runtime_handle, FoxgloveError, LogContext, LogSink};
 use tokio::runtime::Handle;
 use tracing::warn;
@@ -198,8 +200,8 @@ impl WebSocketServerHandle {
     /// Publishes the current server timestamp to all clients.
     #[doc(hidden)]
     #[cfg(feature = "unstable")]
-    pub async fn broadcast_time(&self, timestamp_nanos: u64) {
-        self.0.broadcast_time(timestamp_nanos).await;
+    pub fn broadcast_time(&self, timestamp_nanos: u64) {
+        self.0.broadcast_time(timestamp_nanos);
     }
 
     /// Sets a new session ID and notifies all clients, causing them to reset their state.
@@ -231,6 +233,11 @@ impl WebSocketServerHandle {
         self.0.remove_status(status_ids);
     }
 
+    /// Publishes a connection graph update to all subscribed clients.
+    pub fn publish_connection_graph(&self, update: ConnectionGraph) -> Result<(), FoxgloveError> {
+        self.0.connection_graph_update(update)
+    }
+
     /// Gracefully shutdown the websocket server.
     pub async fn stop(self) {
         let sink = self.0.clone() as Arc<dyn LogSink>;
@@ -250,7 +257,7 @@ impl WebSocketServerBlockingHandle {
     /// [`remove_services`][WebSocketServerBlockingHandle::remove_services].
     ///
     /// This method will fail if the server was not configured with [`Capability::Services`].
-    pub async fn add_services(
+    pub fn add_services(
         &self,
         services: impl IntoIterator<Item = Service>,
     ) -> Result<(), FoxgloveError> {
@@ -258,7 +265,7 @@ impl WebSocketServerBlockingHandle {
     }
 
     /// Removes services that were previously advertised.
-    pub async fn remove_services(&self, ids: impl IntoIterator<Item = ServiceId>) {
+    pub fn remove_services(&self, ids: impl IntoIterator<Item = ServiceId>) {
         self.0.remove_services(ids);
     }
 
@@ -266,9 +273,7 @@ impl WebSocketServerBlockingHandle {
     #[doc(hidden)]
     #[cfg(feature = "unstable")]
     pub fn broadcast_time(&self, timestamp_nanos: u64) {
-        self.0
-            .runtime()
-            .block_on(self.0.broadcast_time(timestamp_nanos))
+        self.0.broadcast_time(timestamp_nanos);
     }
 
     /// Sets a new session ID and notifies all clients, causing them to reset their state.
@@ -298,6 +303,11 @@ impl WebSocketServerBlockingHandle {
     /// [remove-status]: https://github.com/foxglove/ws-protocol/blob/main/docs/spec.md#remove-status
     pub fn remove_status(&self, status_ids: Vec<String>) {
         self.0.remove_status(status_ids);
+    }
+
+    /// Publishes a connection graph update to all subscribed clients.
+    pub fn publish_connection_graph(&self, update: ConnectionGraph) -> Result<(), FoxgloveError> {
+        self.0.publish_connection_graph(update)
     }
 
     /// Gracefully shutdown the websocket server.

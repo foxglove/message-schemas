@@ -157,6 +157,8 @@ pub enum Capability {
     Time,
     /// Allow clients to call services.
     Services,
+    /// Allow clients to subscribe to connection graph updates.
+    ConnectionGraph,
 }
 
 // https://github.com/foxglove/ws-protocol/blob/main/docs/spec.md#server-info
