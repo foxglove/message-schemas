@@ -112,9 +112,9 @@ impl BaseChannel {
         sequence: Option<u32>,
     ) -> PyResult<()> {
         let metadata = foxglove::PartialMetadata {
-            sequence,
             log_time,
             publish_time,
+            sequence,
         };
         self.0.log_with_meta(msg, metadata);
         Ok(())
@@ -128,12 +128,12 @@ struct PartialMetadata(foxglove::PartialMetadata);
 #[pymethods]
 impl PartialMetadata {
     #[new]
-    #[pyo3(signature = (sequence=None, log_time=None, publish_time=None))]
-    fn new(sequence: Option<u32>, log_time: Option<u64>, publish_time: Option<u64>) -> Self {
+    #[pyo3(signature = (log_time=None, publish_time=None, sequence=None))]
+    fn new(log_time: Option<u64>, publish_time: Option<u64>, sequence: Option<u32>) -> Self {
         Self(foxglove::PartialMetadata {
-            sequence,
             log_time,
             publish_time,
+            sequence,
         })
     }
 }
