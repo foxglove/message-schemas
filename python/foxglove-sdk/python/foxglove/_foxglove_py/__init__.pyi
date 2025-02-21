@@ -4,7 +4,7 @@ from typing import Any, List, Optional, Protocol, Tuple
 class MCAPWriter:
     """
     A writer for logging messages to an MCAP file. Obtain an instance by calling `record_file`, or
-    the context-managed `new_mcap_file`.
+    the context-managed `open_file`.
 
     If you're using `record_file`, you must maintain a reference to the returned writer until you
     are done logging. The writer will be closed automatically when it is garbage collected, but you
