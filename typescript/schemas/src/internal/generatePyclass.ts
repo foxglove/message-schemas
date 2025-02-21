@@ -676,7 +676,7 @@ impl ${channelClass} {
         sequence: Option<u32>,
     ) {
         let metadata = PartialMetadata{ log_time, publish_time, sequence };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {

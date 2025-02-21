@@ -86,7 +86,7 @@ impl CameraCalibrationChannel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -133,7 +133,7 @@ impl CircleAnnotationChannel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -180,7 +180,7 @@ impl ColorChannel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -227,7 +227,7 @@ impl CompressedImageChannel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -274,7 +274,7 @@ impl CompressedVideoChannel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -321,7 +321,7 @@ impl FrameTransformChannel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -368,7 +368,7 @@ impl FrameTransformsChannel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -415,7 +415,7 @@ impl GeoJsonChannel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -462,7 +462,7 @@ impl GridChannel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -509,7 +509,7 @@ impl ImageAnnotationsChannel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -556,7 +556,7 @@ impl KeyValuePairChannel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -603,7 +603,7 @@ impl LaserScanChannel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -650,7 +650,7 @@ impl LocationFixChannel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -697,7 +697,7 @@ impl LogChannel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -744,7 +744,7 @@ impl SceneEntityDeletionChannel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -791,7 +791,7 @@ impl SceneEntityChannel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -838,7 +838,7 @@ impl SceneUpdateChannel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -885,7 +885,7 @@ impl PackedElementFieldChannel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -932,7 +932,7 @@ impl Point2Channel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -979,7 +979,7 @@ impl Point3Channel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -1026,7 +1026,7 @@ impl PointCloudChannel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -1073,7 +1073,7 @@ impl PointsAnnotationChannel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -1120,7 +1120,7 @@ impl PoseChannel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -1167,7 +1167,7 @@ impl PoseInFrameChannel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -1214,7 +1214,7 @@ impl PosesInFrameChannel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -1261,7 +1261,7 @@ impl QuaternionChannel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -1308,7 +1308,7 @@ impl RawImageChannel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -1355,7 +1355,7 @@ impl TextAnnotationChannel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -1402,7 +1402,7 @@ impl Vector2Channel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -1449,7 +1449,7 @@ impl Vector3Channel {
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(&msg.0, metadata.into());
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
