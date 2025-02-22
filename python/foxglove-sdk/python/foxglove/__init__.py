@@ -114,7 +114,7 @@ def verbose_off() -> None:
 
 
 @contextmanager
-def open_file(fname: str) -> Iterator[None]:
+def open(fname: str) -> Iterator[None]:
     """
     Create an MCAP file at the given path for recording.
 
@@ -135,7 +135,7 @@ __all__ = [
     "ServerListener",
     "WebSocketServer",
     "log",
-    "open_file",
+    "open",
     "record_file",
     "start_server",
     "verbose_off",

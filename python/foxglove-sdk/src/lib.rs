@@ -23,7 +23,7 @@ struct BaseChannel(Arc<Channel>);
 ///  A writer for logging messages to an MCAP file.
 ///
 /// Obtain an instance by calling :py:func:`record_file`, or the context-managed
-/// :py:func:`open_file`.
+/// :py:func:`open`.
 ///
 /// If you're using :py:func:`record_file`, you must maintain a reference to the returned writer
 /// until you are done logging. The writer will be closed automatically when it is garbage
@@ -46,7 +46,7 @@ impl PyMcapWriter {
     ///
     /// You may call this to explicitly close the writer. Note that the writer will be automatically
     /// closed for you when it is garbage collected, or when using the context-managed
-    /// :py:func:`open_file`.
+    /// :py:func:`open`.
     fn close(&mut self) -> PyResult<()> {
         if let Some(writer) = self.0.take() {
             writer.close().map_err(PyFoxgloveError::from)?;

@@ -12,7 +12,7 @@ args = parser.parse_args()
 
 def main() -> None:
     # Create a new mcap file at the given path for recording
-    with foxglove.open_file(args.path):
+    with foxglove.open(args.path):
         channel = LogChannel("/hello")
 
         for i in range(10):
