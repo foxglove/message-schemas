@@ -38,12 +38,11 @@ impl PyMcapWriter {
         slf
     }
 
-    #[allow(unused_variables)]
     fn __exit__(
         &mut self,
-        exc_type: Py<PyAny>,
-        exc_value: Py<PyAny>,
-        traceback: Py<PyAny>,
+        _exc_type: Py<PyAny>,
+        _exc_value: Py<PyAny>,
+        _traceback: Py<PyAny>,
     ) -> PyResult<()> {
         self.close()
     }
