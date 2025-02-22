@@ -3,7 +3,6 @@ use foxglove::{Channel, ChannelBuilder, LogContext, McapWriter, McapWriterHandle
 use generated::channels;
 use generated::schemas;
 use log::LevelFilter;
-use parking_lot::Mutex;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use std::collections::BTreeMap;
@@ -22,24 +21,21 @@ mod websocket_server;
 struct BaseChannel(Arc<Channel>);
 
 /// A writer for logging messages to an MCAP file.
-#[derive(Clone)]
 #[pyclass(name = "MCAPWriter", module = "foxglove")]
-struct PyMcapWriter(Arc<Mutex<Option<McapWriterHandle<BufWriter<File>>>>>);
+struct PyMcapWriter(Option<McapWriterHandle<BufWriter<File>>>);
 
 impl Drop for PyMcapWriter {
     fn drop(&mut self) {
-        if Arc::strong_count(&self.0) == 1 {
-            if let Err(e) = self.close() {
-                log::error!("Failed to close MCAP writer: {e}");
-            }
+        if let Err(e) = self.close() {
+            log::error!("Failed to close MCAP writer: {e}");
         }
     }
 }
 
 #[pymethods]
 impl PyMcapWriter {
-    fn __enter__(&self) -> PyResult<Self> {
-        Ok(self.clone())
+    fn __enter__(slf: PyRef<Self>) -> PyResult<PyRef<Self>> {
+        Ok(slf)
     }
 
     #[allow(unused_variables)]
@@ -54,7 +50,7 @@ impl PyMcapWriter {
 
     /// Close the MCAP writer.
     fn close(&mut self) -> PyResult<()> {
-        if let Some(writer) = self.0.lock().take() {
+        if let Some(writer) = self.0.take() {
             writer.close().map_err(PyFoxgloveError::from)?;
         }
         Ok(())
@@ -163,7 +159,7 @@ fn open_mcap(path: &str, allow_overwrite: bool) -> PyResult<PyMcapWriter> {
     let handle = McapWriter::new()
         .create(writer)
         .map_err(PyFoxgloveError::from)?;
-    Ok(PyMcapWriter(Arc::new(Mutex::new(Some(handle)))))
+    Ok(PyMcapWriter(Some(handle)))
 }
 
 #[pyfunction]

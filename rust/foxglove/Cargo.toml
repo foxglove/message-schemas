@@ -18,7 +18,7 @@ bytes.workspace = true
 flume = "0.11.1"
 futures-util = { version = "0.3.31", features = ["sink", "std"] }
 mcap.workspace = true
-parking_lot.workspace = true
+parking_lot = "0.12.3"
 prost-types.workspace = true
 prost.workspace = true
 serde_json = "1.0.128"
