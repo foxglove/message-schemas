@@ -3,6 +3,7 @@ use foxglove::{Channel, ChannelBuilder, LogContext, McapWriter, McapWriterHandle
 use generated::channels;
 use generated::schemas;
 use log::LevelFilter;
+use parking_lot::Mutex;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use std::collections::BTreeMap;
@@ -20,35 +21,40 @@ mod websocket_server;
 #[pyclass(module = "foxglove")]
 struct BaseChannel(Arc<Channel>);
 
-///  A writer for logging messages to an MCAP file.
-///
-/// Obtain an instance by calling :py:func:`record_file`, or the context-managed
-/// :py:func:`new_mcap_file`.
-///
-/// If you're using :py:func:`record_file`, you must maintain a reference to the returned writer
-/// until you are done logging. The writer will be closed automatically when it is garbage
-/// collected, but you may also :py:func:`MCAPWriter.close` it explicitly.
+/// A writer for logging messages to an MCAP file.
+#[derive(Clone)]
 #[pyclass(name = "MCAPWriter", module = "foxglove")]
-struct PyMcapWriter(Option<McapWriterHandle<BufWriter<File>>>);
+struct PyMcapWriter(Arc<Mutex<Option<McapWriterHandle<BufWriter<File>>>>>);
 
 impl Drop for PyMcapWriter {
     fn drop(&mut self) {
-        log::info!("MCAP writer dropped");
-        if let Err(e) = self.close() {
-            log::error!("Failed to close MCAP writer: {e}");
+        if Arc::strong_count(&self.0) == 1 {
+            if let Err(e) = self.close() {
+                log::error!("Failed to close MCAP writer: {e}");
+            }
         }
     }
 }
 
 #[pymethods]
 impl PyMcapWriter {
+    fn __enter__(&self) -> PyResult<Self> {
+        Ok(self.clone())
+    }
+
+    #[allow(unused_variables)]
+    fn __exit__(
+        &mut self,
+        exc_type: Py<PyAny>,
+        exc_value: Py<PyAny>,
+        traceback: Py<PyAny>,
+    ) -> PyResult<()> {
+        self.close()
+    }
+
     /// Close the MCAP writer.
-    ///
-    /// You may call this to explicitly close the writer. Note that the writer will be automatically
-    /// closed for you when it is garbage collected, or when using the context-managed
-    /// :py:func:`new_mcap_file`.
     fn close(&mut self) -> PyResult<()> {
-        if let Some(writer) = self.0.take() {
+        if let Some(writer) = self.0.lock().take() {
             writer.close().map_err(PyFoxgloveError::from)?;
         }
         Ok(())
@@ -145,16 +151,19 @@ impl From<PartialMetadata> for foxglove::PartialMetadata {
 }
 
 /// Open a new mcap file for recording.
-///
-/// :param path: The path to the MCAP file. This file will be created and must not already exist.
-/// :return: A new `MCAPWriter` object.
 #[pyfunction]
-#[pyo3(signature = (path))]
-fn record_file(path: &str) -> PyResult<PyMcapWriter> {
+#[pyo3(signature = (path, allow_overwrite = false))]
+fn open_mcap(path: &str, allow_overwrite: bool) -> PyResult<PyMcapWriter> {
+    let file = if allow_overwrite {
+        File::create(path)?
+    } else {
+        File::create_new(path)?
+    };
+    let writer = BufWriter::new(file);
     let handle = McapWriter::new()
-        .create_new_buffered_file(path)
+        .create(writer)
         .map_err(PyFoxgloveError::from)?;
-    Ok(PyMcapWriter(Some(handle)))
+    Ok(PyMcapWriter(Arc::new(Mutex::new(Some(handle)))))
 }
 
 #[pyfunction]
@@ -199,7 +208,7 @@ fn _foxglove_py(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(enable_logging, m)?)?;
     m.add_function(wrap_pyfunction!(disable_logging, m)?)?;
     m.add_function(wrap_pyfunction!(shutdown, m)?)?;
-    m.add_function(wrap_pyfunction!(record_file, m)?)?;
+    m.add_function(wrap_pyfunction!(open_mcap, m)?)?;
     m.add_function(wrap_pyfunction!(start_server, m)?)?;
     m.add_function(wrap_pyfunction!(get_channel_for_topic, m)?)?;
     m.add_class::<BaseChannel>()?;

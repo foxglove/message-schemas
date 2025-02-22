@@ -647,6 +647,7 @@ dependencies = [
  "env_logger",
  "foxglove",
  "log",
+ "parking_lot",
  "prost-types",
  "pyo3",
  "pyo3-log",
