@@ -34,8 +34,8 @@ impl Drop for PyMcapWriter {
 
 #[pymethods]
 impl PyMcapWriter {
-    fn __enter__(slf: PyRef<Self>) -> PyResult<PyRef<Self>> {
-        Ok(slf)
+    fn __enter__(slf: PyRef<Self>) -> PyRef<Self> {
+        slf
     }
 
     #[allow(unused_variables)]
