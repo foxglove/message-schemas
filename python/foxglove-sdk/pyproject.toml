@@ -33,6 +33,7 @@ numpy = "^2.0"
 black = "^24.2.0"
 flake8 = "^7.0.0"
 sphinx = "^7.0.0"
+isort = "^6.0.0"
 
 [tool.mypy]
 python_version = "3.9"
@@ -50,3 +51,6 @@ warn_unreachable = true
 
 [tool.black]
 include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
