@@ -156,11 +156,16 @@ impl PyWebSocketServer {
     }
 
     /// Send a status message to all clients.
-    pub fn publish_status(&self, status: &PyStatus) {
+    #[pyo3(signature = (message, level, id=None))]
+    pub fn publish_status(&self, message: String, level: &PyStatusLevel, id: Option<String>) {
         let Some(server) = &self.0 else {
             return;
         };
-        server.publish_status(status.0.clone());
+        let status = match id {
+            Some(id) => Status::new(level.clone().into(), message).with_id(id),
+            None => Status::new(level.clone().into(), message),
+        };
+        server.publish_status(status);
     }
 
     /// Remove status messages by id from all clients.
@@ -187,31 +192,6 @@ impl From<PyStatusLevel> for StatusLevel {
             PyStatusLevel::Info => StatusLevel::Info,
             PyStatusLevel::Warning => StatusLevel::Warning,
             PyStatusLevel::Error => StatusLevel::Error,
-        }
-    }
-}
-
-/// A status message to be sent to a websocket client.
-#[pyclass(name = "Status", module = "foxglove")]
-#[derive(Clone)]
-pub struct PyStatus(Status);
-
-#[pymethods]
-impl PyStatus {
-    /// Create a new status message.
-    ///
-    /// :param level: The :py:class:`StatusLevel` of the status message.
-    /// :param message: The message to send to the client.
-    /// :param id: An optional identifier for the status message. This can be used to later remove
-    ///     the status message.
-    #[new]
-    #[pyo3(signature = (level, message, id=None))]
-    pub fn new(level: &PyStatusLevel, message: String, id: Option<String>) -> Self {
-        let status = Status::new(level.clone().into(), message);
-        if let Some(id) = id {
-            PyStatus(status.with_id(id))
-        } else {
-            PyStatus(status)
         }
     }
 }

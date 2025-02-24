@@ -9,7 +9,6 @@ use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::BufWriter;
 use std::sync::Arc;
-use websocket_server::PyStatus;
 use websocket_server::PyStatusLevel;
 use websocket_server::{
     start_server, PyCapability, PyClient, PyClientChannelView, PyWebSocketServer,
@@ -213,7 +212,6 @@ fn _foxglove_py(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyCapability>()?;
     m.add_class::<PyClient>()?;
     m.add_class::<PyClientChannelView>()?;
-    m.add_class::<PyStatus>()?;
     m.add_class::<PyStatusLevel>()?;
 
     // Register the schema & channel modules
