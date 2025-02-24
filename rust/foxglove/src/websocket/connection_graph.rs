@@ -71,13 +71,13 @@ impl ConnectionGraph {
         Self::default()
     }
 
-    /// Replace self with updated, computing the difference and returning it as JSON
+    /// Replace self with replacement_graph, computing the difference and returning it as JSON
     /// See: https://github.com/foxglove/ws-protocol/blob/main/docs/spec.md#connection-graph-update
-    pub(crate) fn update(&mut self, updated: ConnectionGraph) -> String {
+    pub(crate) fn update(&mut self, replacement_graph: ConnectionGraph) -> String {
         let mut diff = ConnectionGraphDiff::new();
 
         // Get new or changed published topics
-        for (name, publisher_ids) in updated.published_topics.iter() {
+        for (name, publisher_ids) in replacement_graph.published_topics.iter() {
             if let Some(self_publisher_ids) = self.published_topics.get(name) {
                 if self_publisher_ids == publisher_ids {
                     // No change
@@ -92,7 +92,7 @@ impl ConnectionGraph {
         }
 
         // Get new or changed subscribed topics
-        for (name, subscriber_ids) in updated.subscribed_topics.iter() {
+        for (name, subscriber_ids) in replacement_graph.subscribed_topics.iter() {
             if let Some(self_subscriber_ids) = self.subscribed_topics.get(name) {
                 if self_subscriber_ids == subscriber_ids {
                     // No change
@@ -107,7 +107,7 @@ impl ConnectionGraph {
         }
 
         // Get new or changed advertised services
-        for (name, provider_ids) in updated.advertised_services.iter() {
+        for (name, provider_ids) in replacement_graph.advertised_services.iter() {
             if let Some(self_provider_ids) = self.advertised_services.get(name) {
                 if self_provider_ids == provider_ids {
                     // No change
@@ -121,7 +121,7 @@ impl ConnectionGraph {
 
         // Get removed advertised services
         for name in std::mem::take(&mut self.advertised_services).into_keys() {
-            if !updated.advertised_services.contains_key(&name) {
+            if !replacement_graph.advertised_services.contains_key(&name) {
                 diff.removed_services.push(name);
             }
         }
@@ -131,17 +131,17 @@ impl ConnectionGraph {
             .into_keys()
             .chain(std::mem::take(&mut self.subscribed_topics).into_keys())
         {
-            if updated.published_topics.contains_key(&name) {
+            if replacement_graph.published_topics.contains_key(&name) {
                 continue;
             }
-            if updated.subscribed_topics.contains_key(&name) {
+            if replacement_graph.subscribed_topics.contains_key(&name) {
                 continue;
             }
             diff.removed_topics.insert(name);
         }
 
         let json_diff = diff.to_json();
-        *self = updated;
+        *self = replacement_graph;
         json_diff
     }
 }

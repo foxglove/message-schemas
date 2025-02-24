@@ -234,8 +234,13 @@ impl WebSocketServerHandle {
     }
 
     /// Publishes a connection graph update to all subscribed clients.
-    pub fn publish_connection_graph(&self, update: ConnectionGraph) -> Result<(), FoxgloveError> {
-        self.0.connection_graph_update(update)
+    /// The update is published as a difference from the current graph to replacement_graph.
+    /// When a client first subscribes to connection graph updates, it receives the current graph.
+    pub fn publish_connection_graph(
+        &self,
+        replacement_graph: ConnectionGraph,
+    ) -> Result<(), FoxgloveError> {
+        self.0.replace_connection_graph(replacement_graph)
     }
 
     /// Gracefully shutdown the websocket server.
@@ -306,8 +311,13 @@ impl WebSocketServerBlockingHandle {
     }
 
     /// Publishes a connection graph update to all subscribed clients.
-    pub fn publish_connection_graph(&self, update: ConnectionGraph) -> Result<(), FoxgloveError> {
-        self.0.publish_connection_graph(update)
+    /// The update is published as a difference from the current graph to replacement_graph.
+    /// When a client first subscribes to connection graph updates, it receives the current graph.
+    pub fn publish_connection_graph(
+        &self,
+        replacement_graph: ConnectionGraph,
+    ) -> Result<(), FoxgloveError> {
+        self.0.publish_connection_graph(replacement_graph)
     }
 
     /// Gracefully shutdown the websocket server.

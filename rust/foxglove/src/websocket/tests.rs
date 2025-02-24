@@ -1302,7 +1302,7 @@ async fn test_update_connection_graph() {
         .advertised_services
         .insert("service1".to_string(), collection!["provider1".to_string()]);
     server
-        .connection_graph_update(initial_graph)
+        .replace_connection_graph(initial_graph)
         .expect("failed to update connection graph");
 
     let mut ws_client = connect_client(addr).await;
@@ -1348,7 +1348,7 @@ async fn test_update_connection_graph() {
         .insert("topic2".to_string(), collection!["subscriber2".to_string()]);
     // Delete service1
     server
-        .connection_graph_update(graph)
+        .replace_connection_graph(graph)
         .expect("failed to update connection graph");
 
     let msg = ws_client.next().await.expect("No message received");

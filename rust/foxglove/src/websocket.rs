@@ -1439,9 +1439,9 @@ impl Server {
     }
 
     /// Sends a connection graph update to all clients.
-    pub(crate) fn connection_graph_update(
+    pub(crate) fn replace_connection_graph(
         &self,
-        update: ConnectionGraph,
+        replacement_graph: ConnectionGraph,
     ) -> Result<(), FoxgloveError> {
         // Make sure that the server supports connection graph.
         if !self.capabilities.contains(&Capability::ConnectionGraph) {
@@ -1450,7 +1450,7 @@ impl Server {
 
         // Hold the lock while sending to synchronize with subscribe and unsubscribe.
         let mut connection_graph = self.connection_graph.lock();
-        let json_diff = connection_graph.update(update);
+        let json_diff = connection_graph.update(replacement_graph);
         let msg = Message::text(json_diff);
         for client in self.clients.get().iter() {
             if client.is_subscribed_to_connection_graph() {
