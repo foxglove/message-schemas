@@ -130,9 +130,7 @@ impl Status {
 }
 
 #[derive(Serialize)]
-#[serde(tag = "op")]
-#[serde(rename = "removeStatus")]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", rename = "removeStatus", tag = "op")]
 pub struct RemoveStatus {
     pub status_ids: Vec<String>,
 }

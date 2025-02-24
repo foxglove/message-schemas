@@ -27,8 +27,7 @@ struct NewAdvertisedService<'a> {
 }
 
 #[derive(Debug, Serialize)]
-#[serde(tag = "op")]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", rename = "connectionGraphUpdate", tag = "op")]
 struct ConnectionGraphDiff<'a> {
     published_topics: Vec<NewPublishedTopic<'a>>,
     subscribed_topics: Vec<NewSubscribedTopic<'a>>,
@@ -144,5 +143,205 @@ impl ConnectionGraph {
         let json_diff = diff.to_json();
         *self = updated;
         json_diff
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::{json, Value};
+
+    fn assert_json_eq(left: String, right: Value) {
+        let left: Value = serde_json::from_str(&left).unwrap();
+        assert_eq!(left, right);
+    }
+
+    #[test]
+    fn test_empty_update() {
+        let mut graph = ConnectionGraph::new();
+        let updated = ConnectionGraph::new();
+        let diff = graph.update(updated);
+
+        assert_json_eq(
+            diff,
+            json!({
+                "op": "connectionGraphUpdate",
+                "publishedTopics": [],
+                "subscribedTopics": [],
+                "advertisedServices": [],
+                "removedTopics": [],
+                "removedServices": []
+            }),
+        );
+    }
+
+    #[test]
+    fn test_new_published_topic() {
+        let mut graph = ConnectionGraph::new();
+        let mut updated = ConnectionGraph::new();
+
+        updated.published_topics.insert(
+            "topic1".to_string(),
+            HashSet::from(["publisher1".to_string()]),
+        );
+
+        let diff = graph.update(updated);
+
+        assert_json_eq(
+            diff,
+            json!({
+                "op": "connectionGraphUpdate",
+                "publishedTopics": [{
+                    "name": "topic1",
+                    "publisherIds": ["publisher1"]
+                }],
+                "subscribedTopics": [],
+                "advertisedServices": [],
+                "removedTopics": [],
+                "removedServices": []
+            }),
+        );
+    }
+
+    #[test]
+    fn test_removed_topic() {
+        let mut graph = ConnectionGraph::new();
+        graph.published_topics.insert(
+            "topic1".to_string(),
+            HashSet::from(["publisher1".to_string()]),
+        );
+
+        let updated = ConnectionGraph::new();
+        let diff = graph.update(updated);
+
+        assert_json_eq(
+            diff,
+            json!({
+                "op": "connectionGraphUpdate",
+                "publishedTopics": [],
+                "subscribedTopics": [],
+                "advertisedServices": [],
+                "removedTopics": ["topic1"],
+                "removedServices": []
+            }),
+        );
+    }
+
+    #[test]
+    fn test_changed_publishers() {
+        let mut graph = ConnectionGraph::new();
+        graph.published_topics.insert(
+            "topic1".to_string(),
+            HashSet::from(["publisher1".to_string()]),
+        );
+
+        let mut updated = ConnectionGraph::new();
+        updated.published_topics.insert(
+            "topic1".to_string(),
+            HashSet::from(["publisher2".to_string()]),
+        );
+
+        let diff = graph.update(updated);
+
+        assert_json_eq(
+            diff,
+            json!({
+                "op": "connectionGraphUpdate",
+                "publishedTopics": [{
+                    "name": "topic1",
+                    "publisherIds": ["publisher2"]
+                }],
+                "subscribedTopics": [],
+                "advertisedServices": [],
+                "removedTopics": [],
+                "removedServices": []
+            }),
+        );
+    }
+
+    #[test]
+    fn test_service_changes() {
+        let mut graph = ConnectionGraph::new();
+        graph.advertised_services.insert(
+            "service1".to_string(),
+            HashSet::from(["provider1".to_string()]),
+        );
+
+        let mut updated = ConnectionGraph::new();
+        updated.advertised_services.insert(
+            "service2".to_string(),
+            HashSet::from(["provider2".to_string()]),
+        );
+
+        let diff = graph.update(updated);
+
+        assert_json_eq(
+            diff,
+            json!({
+                "op": "connectionGraphUpdate",
+                "publishedTopics": [],
+                "subscribedTopics": [],
+                "advertisedServices": [{
+                    "name": "service2",
+                    "providerIds": ["provider2"]
+                }],
+                "removedTopics": [],
+                "removedServices": ["service1"]
+            }),
+        );
+    }
+
+    #[test]
+    fn test_complex_update() {
+        let mut graph = ConnectionGraph::new();
+        graph.published_topics.insert(
+            "topic1".to_string(),
+            HashSet::from(["publisher1".to_string()]),
+        );
+        graph.subscribed_topics.insert(
+            "topic1".to_string(),
+            HashSet::from(["subscriber1".to_string()]),
+        );
+        graph.advertised_services.insert(
+            "service1".to_string(),
+            HashSet::from(["provider1".to_string()]),
+        );
+
+        let mut updated = ConnectionGraph::new();
+        updated.published_topics.insert(
+            "topic2".to_string(),
+            HashSet::from(["publisher2".to_string()]),
+        );
+        updated.subscribed_topics.insert(
+            "topic2".to_string(),
+            HashSet::from(["subscriber2".to_string()]),
+        );
+        updated.advertised_services.insert(
+            "service2".to_string(),
+            HashSet::from(["provider2".to_string()]),
+        );
+
+        let diff = graph.update(updated);
+
+        assert_json_eq(
+            diff,
+            json!({
+                "op": "connectionGraphUpdate",
+                "publishedTopics": [{
+                    "name": "topic2",
+                    "publisherIds": ["publisher2"]
+                }],
+                "subscribedTopics": [{
+                    "name": "topic2",
+                    "subscriberIds": ["subscriber2"]
+                }],
+                "advertisedServices": [{
+                    "name": "service2",
+                    "providerIds": ["provider2"]
+                }],
+                "removedTopics": ["topic1"],
+                "removedServices": ["service1"]
+            }),
+        );
     }
 }
