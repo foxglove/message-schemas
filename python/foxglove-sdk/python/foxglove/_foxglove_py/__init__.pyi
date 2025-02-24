@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Protocol, Tuple
 
 class MCAPWriter:
     """
@@ -18,6 +18,11 @@ class MCAPWriter:
         """
         ...
 
+class StatusLevel(Enum):
+    Info = ...
+    Warning = ...
+    Error = ...
+
 class WebSocketServer:
     """
     A websocket server for live visualization.
@@ -27,6 +32,10 @@ class WebSocketServer:
     def stop(self) -> None: ...
     def clear_session(self, session_id: Optional[str] = None) -> None: ...
     def broadcast_time(self, timestamp_nanos: int) -> None: ...
+    def publish_status(
+        self, message: str, level: "StatusLevel", id: Optional[str] = None
+    ) -> None: ...
+    def remove_status(self, ids: list[str]) -> None: ...
 
 class BaseChannel:
     """
@@ -79,12 +88,30 @@ class Capability(Enum):
     """
 
     Time = ...
+    ClientPublish = ...
+
+class Client:
+    """
+    A client that is connected to a running websocket server.
+    """
+
+    id = ...
+
+class ClientChannelView:
+    """
+    Information about a client channel.
+    """
+
+    id = ...
+    topic = ...
 
 def start_server(
     name: Optional[str] = None,
     host: Optional[str] = "127.0.0.1",
     port: Optional[int] = 8765,
     capabilities: Optional[List[Capability]] = None,
+    server_listener: Any = None,
+    supported_encodings: Optional[List[str]] = None,
 ) -> WebSocketServer:
     """
     Start a websocket server for live visualization.
