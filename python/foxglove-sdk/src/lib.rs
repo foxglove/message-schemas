@@ -161,7 +161,7 @@ impl From<PartialMetadata> for foxglove::PartialMetadata {
 ///
 /// :param path: The path to the MCAP file. This file will be created and must not already exist.
 /// :param allow_overwrite: Set this flag in order to overwrite an existing file at this path.
-/// :return: A new `MCAPWriter` object.
+/// :rtype: :py:class:`MCAPWriter`
 #[pyfunction]
 #[pyo3(signature = (path, *, allow_overwrite = false))]
 fn open_mcap(path: PathBuf, allow_overwrite: bool) -> PyResult<PyMcapWriter> {
