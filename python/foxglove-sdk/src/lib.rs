@@ -8,6 +8,7 @@ use pyo3::prelude::*;
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::BufWriter;
+use std::path::PathBuf;
 use std::sync::Arc;
 use websocket_server::{
     start_server, PyCapability, PyClient, PyClientChannelView, PyWebSocketServer,
@@ -21,6 +22,14 @@ mod websocket_server;
 struct BaseChannel(Arc<Channel>);
 
 /// A writer for logging messages to an MCAP file.
+///
+/// Obtain an instance by calling :py:func:`open_mcap`.
+///
+/// This class may be used as a context manager, in which case the writer will
+/// be closed when you exit the context.
+///
+/// If the writer is not closed by the time it is garbage collected, it will be
+/// closed automatically, and any errors will be logged.
 #[pyclass(name = "MCAPWriter", module = "foxglove")]
 struct PyMcapWriter(Option<McapWriterHandle<BufWriter<File>>>);
 
@@ -48,6 +57,9 @@ impl PyMcapWriter {
     }
 
     /// Close the MCAP writer.
+    ///
+    /// You may call this to explicitly close the writer. Note that the writer will be automatically
+    /// closed for you when it is garbage collected, or when exiting the context manager.
     fn close(&mut self) -> PyResult<()> {
         if let Some(writer) = self.0.take() {
             writer.close().map_err(PyFoxgloveError::from)?;
@@ -146,9 +158,13 @@ impl From<PartialMetadata> for foxglove::PartialMetadata {
 }
 
 /// Open a new mcap file for recording.
+///
+/// :param path: The path to the MCAP file. This file will be created and must not already exist.
+/// :param allow_overwrite: Set this flag in order to overwrite an existing file at this path.
+/// :return: A new `MCAPWriter` object.
 #[pyfunction]
-#[pyo3(signature = (path, allow_overwrite = false))]
-fn open_mcap(path: &str, allow_overwrite: bool) -> PyResult<PyMcapWriter> {
+#[pyo3(signature = (path, *, allow_overwrite = false))]
+fn open_mcap(path: PathBuf, allow_overwrite: bool) -> PyResult<PyMcapWriter> {
     let file = if allow_overwrite {
         File::create(path)?
     } else {

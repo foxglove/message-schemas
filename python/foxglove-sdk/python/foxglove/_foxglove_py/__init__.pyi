@@ -1,11 +1,12 @@
 from enum import Enum
+from pathlib import Path
 from typing import Any, List, Optional, Tuple
 
 class MCAPWriter:
     """
     A writer for logging messages to an MCAP file.
 
-    Obtain an instance by calling `open_mcap`.
+    Obtain an instance by calling :py:func:`open_mcap`.
 
     This class may be used as a context manager, in which case the writer will
     be closed when you exit the context.
@@ -136,7 +137,7 @@ def shutdown() -> None:
     """
     ...
 
-def open_mcap(path: str, allow_overwrite: bool = False) -> MCAPWriter:
+def open_mcap(path: str | Path, allow_overwrite: bool = False) -> MCAPWriter:
     """
     Creates a new MCAP file for recording.
 
