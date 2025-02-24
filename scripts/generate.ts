@@ -270,6 +270,7 @@ async function main({ clean }: { clean: boolean }) {
       path.resolve(channelStubModule),
     ];
     await exec("poetry", ["run", "black", ...pythonFiles], { cwd: repoRoot });
+    await exec("poetry", ["run", "isort", ...pythonFiles], { cwd: repoRoot });
   });
 
   await logProgressLn("Updating Jest snapshots", async () => {

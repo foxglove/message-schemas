@@ -21,6 +21,7 @@ jobs:
       - run: poetry check --strict
       - run: poetry install
       - run: poetry run black . --check
+      - run: poetry run isort . --check
       - run: poetry run flake8 .
 
   lint-and-test-sdk:

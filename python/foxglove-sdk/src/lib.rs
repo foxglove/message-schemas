@@ -1,5 +1,7 @@
 use errors::PyFoxgloveError;
-use foxglove::{Channel, ChannelBuilder, LogContext, McapWriter, McapWriterHandle, Schema};
+use foxglove::{
+    Channel, ChannelBuilder, LogContext, McapWriter, McapWriterHandle, PartialMetadata, Schema,
+};
 use generated::channels;
 use generated::schemas;
 use log::LevelFilter;
@@ -104,44 +106,21 @@ impl BaseChannel {
         Ok(BaseChannel(channel))
     }
 
-    #[pyo3(signature = (msg, publish_time=None, log_time=None, sequence=None))]
+    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &[u8],
-        publish_time: Option<u64>,
         log_time: Option<u64>,
+        publish_time: Option<u64>,
         sequence: Option<u32>,
     ) -> PyResult<()> {
-        let metadata = foxglove::PartialMetadata {
-            sequence,
+        let metadata = PartialMetadata {
             log_time,
             publish_time,
+            sequence,
         };
         self.0.log_with_meta(msg, metadata);
         Ok(())
-    }
-}
-
-#[pyclass(module = "foxglove")]
-#[derive(Clone, Default)]
-struct PartialMetadata(foxglove::PartialMetadata);
-
-#[pymethods]
-impl PartialMetadata {
-    #[new]
-    #[pyo3(signature = (sequence=None, log_time=None, publish_time=None))]
-    fn new(sequence: Option<u32>, log_time: Option<u64>, publish_time: Option<u64>) -> Self {
-        Self(foxglove::PartialMetadata {
-            sequence,
-            log_time,
-            publish_time,
-        })
-    }
-}
-
-impl From<PartialMetadata> for foxglove::PartialMetadata {
-    fn from(value: PartialMetadata) -> Self {
-        value.0
     }
 }
 
@@ -205,7 +184,6 @@ fn _foxglove_py(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(get_channel_for_topic, m)?)?;
     m.add_class::<BaseChannel>()?;
     m.add_class::<PyMcapWriter>()?;
-    m.add_class::<PartialMetadata>()?;
 
     // Websocket server classes
     m.add_class::<PyWebSocketServer>()?;

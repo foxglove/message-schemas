@@ -1,5 +1,6 @@
-import foxglove
 import logging
+
+import foxglove
 
 # Make the SDK logging optionally available to the python client using verbose_on() or verbose_off()
 # The log level can also be set with verbose_on(level) (default is "debug")

@@ -1,7 +1,7 @@
 import time
 import unittest
 
-from foxglove import start_server, Capability, Service, ServiceSchema, StatusLevel
+from foxglove import Capability, Service, ServiceSchema, StatusLevel, start_server
 
 
 class TestServer(unittest.TestCase):
@@ -24,7 +24,7 @@ class TestServer(unittest.TestCase):
                 Service(
                     name="test",
                     schema=ServiceSchema(name="test-schema"),
-                    handler=lambda _svc, _client, _cid, _enc, _bytes: b"{}",
+                    handler=lambda _client, _request: b"{}",
                 ),
             ],
         )

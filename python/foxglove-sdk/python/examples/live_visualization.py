@@ -2,12 +2,11 @@ import json
 import logging
 import math
 import struct
-import foxglove
-import numpy as np
 import time
 
+import foxglove
+import numpy as np
 from examples.geometry import euler_to_quaternion
-
 from foxglove import Capability, SchemaDefinition
 from foxglove.channels import (
     FrameTransformsChannel,
