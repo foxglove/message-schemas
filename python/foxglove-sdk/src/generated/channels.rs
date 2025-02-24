@@ -73,7 +73,7 @@ impl CameraCalibrationChannel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::CameraCalibration,
@@ -120,7 +120,7 @@ impl CircleAnnotationChannel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::CircleAnnotation,
@@ -167,7 +167,7 @@ impl ColorChannel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::Color,
@@ -214,7 +214,7 @@ impl CompressedImageChannel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::CompressedImage,
@@ -261,7 +261,7 @@ impl CompressedVideoChannel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::CompressedVideo,
@@ -308,7 +308,7 @@ impl FrameTransformChannel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::FrameTransform,
@@ -355,7 +355,7 @@ impl FrameTransformsChannel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::FrameTransforms,
@@ -402,7 +402,7 @@ impl GeoJsonChannel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::GeoJson,
@@ -449,7 +449,7 @@ impl GridChannel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::Grid,
@@ -496,7 +496,7 @@ impl ImageAnnotationsChannel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::ImageAnnotations,
@@ -543,7 +543,7 @@ impl KeyValuePairChannel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::KeyValuePair,
@@ -590,7 +590,7 @@ impl LaserScanChannel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::LaserScan,
@@ -637,7 +637,7 @@ impl LocationFixChannel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::LocationFix,
@@ -684,7 +684,7 @@ impl LogChannel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::Log,
@@ -731,7 +731,7 @@ impl SceneEntityDeletionChannel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::SceneEntityDeletion,
@@ -778,7 +778,7 @@ impl SceneEntityChannel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::SceneEntity,
@@ -825,7 +825,7 @@ impl SceneUpdateChannel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::SceneUpdate,
@@ -872,7 +872,7 @@ impl PackedElementFieldChannel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::PackedElementField,
@@ -919,7 +919,7 @@ impl Point2Channel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::Point2,
@@ -966,7 +966,7 @@ impl Point3Channel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::Point3,
@@ -1013,7 +1013,7 @@ impl PointCloudChannel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::PointCloud,
@@ -1060,7 +1060,7 @@ impl PointsAnnotationChannel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::PointsAnnotation,
@@ -1107,7 +1107,7 @@ impl PoseChannel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::Pose,
@@ -1154,7 +1154,7 @@ impl PoseInFrameChannel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::PoseInFrame,
@@ -1201,7 +1201,7 @@ impl PosesInFrameChannel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::PosesInFrame,
@@ -1248,7 +1248,7 @@ impl QuaternionChannel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::Quaternion,
@@ -1295,7 +1295,7 @@ impl RawImageChannel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::RawImage,
@@ -1342,7 +1342,7 @@ impl TextAnnotationChannel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::TextAnnotation,
@@ -1389,7 +1389,7 @@ impl Vector2Channel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::Vector2,
@@ -1436,7 +1436,7 @@ impl Vector3Channel {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::Vector3,

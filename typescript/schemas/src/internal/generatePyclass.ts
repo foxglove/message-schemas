@@ -667,7 +667,7 @@ impl ${channelClass} {
     /// :param sequence: The sequence number is unique per channel and allows for ordering of
     ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
     ///     sequence number unique to the channel is used.
-    #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
     fn log(
         &self,
         msg: &schemas::${schemaClass},
