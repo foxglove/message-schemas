@@ -1,6 +1,6 @@
 use crate::errors::PyFoxgloveError;
 use foxglove::{
-    websocket::{Client, ClientChannelView, ServerListener},
+    websocket::{Client, ClientChannelView, ServerListener, Status, StatusLevel},
     WebSocketServer, WebSocketServerBlockingHandle,
 };
 use pyo3::{
@@ -139,24 +139,66 @@ impl PyWebSocketServer {
 
     /// Sets a new session ID and notifies all clients, causing them to reset their state.
     /// If no session ID is provided, generates a new one based on the current timestamp.
+    /// If the server has been stopped, this has no effect.
     #[pyo3(signature = (session_id=None))]
-    pub fn clear_session(&self, session_id: Option<String>) -> PyResult<()> {
+    pub fn clear_session(&self, session_id: Option<String>) {
         if let Some(server) = &self.0 {
             server.clear_session(session_id);
-        }
-        Ok(())
+        };
     }
 
-    pub fn broadcast_time(&self, timestamp_nanos: u64) -> PyResult<()> {
+    /// Publishes the current server timestamp to all clients.
+    /// If the server has been stopped, this has no effect.
+    pub fn broadcast_time(&self, timestamp_nanos: u64) {
         if let Some(server) = &self.0 {
             server.broadcast_time(timestamp_nanos);
+        };
+    }
+
+    /// Send a status message to all clients.
+    /// If the server has been stopped, this has no effect.
+    #[pyo3(signature = (message, level, id=None))]
+    pub fn publish_status(&self, message: String, level: &PyStatusLevel, id: Option<String>) {
+        let Some(server) = &self.0 else {
+            return;
+        };
+        let status = match id {
+            Some(id) => Status::new(level.clone().into(), message).with_id(id),
+            None => Status::new(level.clone().into(), message),
+        };
+        server.publish_status(status);
+    }
+
+    /// Remove status messages by id from all clients.
+    /// If the server has been stopped, this has no effect.
+    pub fn remove_status(&self, status_ids: Vec<String>) {
+        if let Some(server) = &self.0 {
+            server.remove_status(status_ids);
+        };
+    }
+}
+
+/// The level of a :py:class:`Status` message
+#[pyclass(name = "StatusLevel", module = "foxglove", eq, eq_int)]
+#[derive(Clone, PartialEq)]
+pub enum PyStatusLevel {
+    Info,
+    Warning,
+    Error,
+}
+
+impl From<PyStatusLevel> for StatusLevel {
+    fn from(value: PyStatusLevel) -> Self {
+        match value {
+            PyStatusLevel::Info => StatusLevel::Info,
+            PyStatusLevel::Warning => StatusLevel::Warning,
+            PyStatusLevel::Error => StatusLevel::Error,
         }
-        Ok(())
     }
 }
 
 /// A capability that the websocket server advertises to its clients.
-#[pyclass(eq, eq_int, name = "Capability")]
+#[pyclass(name = "Capability", module = "foxglove", eq, eq_int)]
 #[derive(Clone, PartialEq)]
 pub enum PyCapability {
     /// Allow clients to advertise channels to send data messages to the server.
