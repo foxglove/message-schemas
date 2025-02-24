@@ -6,27 +6,24 @@ schemas.
 """
 
 import atexit
+import logging
 from contextlib import contextmanager
 from typing import Iterator, List, Optional, Protocol, Union
+
 from ._foxglove_py import (
-    ClientChannelView,
+    Capability,
     Client,
+    ClientChannelView,
     MCAPWriter,
     StatusLevel,
     WebSocketServer,
-    record_file,
-    enable_logging,
     disable_logging,
+    enable_logging,
+    record_file,
     shutdown,
-    Capability,
 )
-
 from ._foxglove_py import start_server as _start_server
-
-
-from .channel import Channel, log, SchemaDefinition
-
-import logging
+from .channel import Channel, SchemaDefinition, log
 
 logging.basicConfig(
     level=logging.DEBUG, format="%(asctime)s [%(levelname)s] %(message)s"
