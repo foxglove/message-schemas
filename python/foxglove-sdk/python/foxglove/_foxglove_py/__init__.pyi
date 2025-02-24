@@ -28,6 +28,11 @@ class MCAPWriter:
         """
         ...
 
+class StatusLevel(Enum):
+    Info = ...
+    Warning = ...
+    Error = ...
+
 class WebSocketServer:
     """
     A websocket server for live visualization.
@@ -37,6 +42,10 @@ class WebSocketServer:
     def stop(self) -> None: ...
     def clear_session(self, session_id: Optional[str] = None) -> None: ...
     def broadcast_time(self, timestamp_nanos: int) -> None: ...
+    def publish_status(
+        self, message: str, level: "StatusLevel", id: Optional[str] = None
+    ) -> None: ...
+    def remove_status(self, ids: list[str]) -> None: ...
 
 class BaseChannel:
     """
@@ -59,29 +68,6 @@ class BaseChannel:
         log_time: Optional[int] = None,
         sequence: Optional[int] = None,
     ) -> None: ...
-
-class PartialMetadata:
-    """
-    Structured metadata for use with logging. All fields are optional.
-    """
-
-    def __new__(
-        cls,
-        sequence: Optional[int] = None,
-        log_time: Optional[int] = None,
-        publish_time: Optional[int] = None,
-    ) -> "PartialMetadata":
-        """
-        :param sequence: The sequence number is unique per channel and allows for ordering of
-            messages as well as detecting missing messages. If omitted, a monotonically increasing
-            sequence number unique to the channel is used.
-        :param log_time: The log time is the time, as nanoseconds from the unix epoch, that the
-            message was recorded. Usually this is the time log() is called. If omitted, the
-            current time is used.
-        :param publish_time: The publish_time is the time at which the message was published. e.g.
-            the timestamp at which the sensor reading was taken. If omitted, log time is used.
-        """
-        ...
 
 class Capability(Enum):
     """
