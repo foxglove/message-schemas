@@ -139,23 +139,24 @@ impl PyWebSocketServer {
 
     /// Sets a new session ID and notifies all clients, causing them to reset their state.
     /// If no session ID is provided, generates a new one based on the current timestamp.
+    /// If the server has been stopped, this has no effect.
     #[pyo3(signature = (session_id=None))]
     pub fn clear_session(&self, session_id: Option<String>) {
-        let Some(server) = &self.0 else {
-            return;
+        if let Some(server) = &self.0 {
+            server.clear_session(session_id);
         };
-        server.clear_session(session_id);
     }
 
     /// Publishes the current server timestamp to all clients.
+    /// If the server has been stopped, this has no effect.
     pub fn broadcast_time(&self, timestamp_nanos: u64) {
-        let Some(server) = &self.0 else {
-            return;
+        if let Some(server) = &self.0 {
+            server.broadcast_time(timestamp_nanos);
         };
-        server.broadcast_time(timestamp_nanos);
     }
 
     /// Send a status message to all clients.
+    /// If the server has been stopped, this has no effect.
     #[pyo3(signature = (message, level, id=None))]
     pub fn publish_status(&self, message: String, level: &PyStatusLevel, id: Option<String>) {
         let Some(server) = &self.0 else {
@@ -169,11 +170,11 @@ impl PyWebSocketServer {
     }
 
     /// Remove status messages by id from all clients.
+    /// If the server has been stopped, this has no effect.
     pub fn remove_status(&self, status_ids: Vec<String>) {
-        let Some(server) = &self.0 else {
-            return;
+        if let Some(server) = &self.0 {
+            server.remove_status(status_ids);
         };
-        server.remove_status(status_ids);
     }
 }
 
