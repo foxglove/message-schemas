@@ -10,33 +10,27 @@ import json
 import logging
 
 from foxglove import (
-    Service,
-    ServiceSchema,
-    start_server,
     Capability,
     Client,
+    Request,
+    Service,
     ServiceHandler,
+    ServiceSchema,
+    start_server,
 )
 
 
 def logging_handler(
-    service_name: str, client: Client, call_id: int, encoding: str, payload: bytes
-):
+    client: Client,
+    request: Request,
+) -> bytes:
     """
     A handler for the service, adhering to the `ServiceHandler` type,
     called with the following positional arguments:
 
-    1. service_name: The name of the service
-    2. topic: The topic name
-    3. call_id: The ID of this call
-    4. client: The client that called the service
-    5. payload: The payload from the client
-
     The handler should return a bytes object which will be sent back to the client.
-
-    The handler must return quickly.
     """
-    log_request(service_name, client, call_id, encoding, payload)
+    log_request(client, request)
     return b"{}"
 
 
@@ -50,21 +44,17 @@ greeting_handler: ServiceHandler = lambda *_: json.dumps(
 class EchoService:
     def __call__(
         self,
-        service_name: str,
         client: Client,
-        call_id: int,
-        encoding: str,
-        payload: bytes,
-    ):
-        log_request(service_name, client, call_id, encoding, payload)
-        return payload
+        request: Request,
+    ) -> bytes:
+        log_request(client, request)
+        return request.payload
 
 
-def log_request(
-    service_name: str, client: Client, call_id: int, encoding: str, payload: bytes
-):
+def log_request(client: Client, request: Request):
     logging.debug(
-        f"[{service_name}] Request {call_id} from {client} on {encoding}: {payload!r}"
+        f"[{request.service_name}] Request {request.call_id} from {client} on {request.encoding}: "
+        f"{request.payload!r}"
     )
 
 

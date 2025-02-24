@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, List, Optional, Tuple, Callable
+from typing import Any, Callable, List, Optional, Tuple
 
 class MCAPWriter:
     """
@@ -106,7 +106,17 @@ class ClientChannelView:
     id = ...
     topic = ...
 
-ServiceHandler = Callable[["Client", str, int, str, bytes], bytes]
+ServiceHandler = Callable[["Client", "Request"], bytes]
+
+class Request:
+    """
+    A websocket service request.
+    """
+
+    service_name: str
+    call_id: int
+    encoding: str
+    payload: bytes
 
 class Service:
     """

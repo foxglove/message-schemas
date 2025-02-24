@@ -24,6 +24,14 @@ impl PyClient {
     }
 }
 
+impl From<Client<'_>> for PyClient {
+    fn from(value: Client) -> Self {
+        Self {
+            id: value.id().into(),
+        }
+    }
+}
+
 /// Information about a client channel.
 #[pyclass(name = "ClientChannelView", module = "foxglove")]
 pub struct PyClientChannelView {
@@ -77,38 +85,30 @@ impl ServerListener for PyServerListener {
 
 /// A handler for websocket services which calls out to user-defined functions
 struct ServiceHandler {
-    handler: Py<PyAny>,
+    handler: Arc<Py<PyAny>>,
 }
-
-impl foxglove::websocket::service::SyncHandler for ServiceHandler {
-    type Error = PyErr;
-
+impl foxglove::websocket::service::Handler for ServiceHandler {
     fn call(
         &self,
         client: Client,
         request: foxglove::websocket::service::Request,
-    ) -> Result<Bytes, Self::Error> {
-        let client_info = PyClient {
-            id: client.id().into(),
-        };
-        let service_name = request.service_name();
-        let call_id: u32 = request.call_id().into();
-        let encoding = request.encoding();
-        let payload = request.payload();
-
-        let result: PyResult<Vec<u8>> = Python::with_gil(|py| {
-            let args = (service_name, client_info, call_id, encoding, payload);
-            let result = self.handler.bind(py).call(args, None)?;
-            result.extract::<Vec<u8>>()
+        responder: foxglove::websocket::service::Responder,
+    ) {
+        let handler = self.handler.clone();
+        let client = PyClient::from(client);
+        let request = PyRequest(request);
+        // Punt the callback to a blocking thread.
+        tokio::task::spawn_blocking(move || {
+            let result = Python::with_gil(|py| {
+                handler
+                    .bind(py)
+                    .call((client, request), None)
+                    .and_then(|data| data.extract::<Vec<u8>>())
+            })
+            .map(Bytes::from)
+            .map_err(|e| e.to_string());
+            responder.respond(result);
         });
-
-        match result {
-            Ok(bytes) => Ok(Bytes::from(bytes)),
-            Err(err) => {
-                tracing::error!("Error calling service: {}", err.to_string());
-                Err(err)
-            }
-        }
     }
 }
 
@@ -303,9 +303,40 @@ impl From<PyService> for foxglove::websocket::service::Service {
     fn from(value: PyService) -> Self {
         foxglove::websocket::service::Service::builder(value.name, value.schema.into()).handler(
             ServiceHandler {
-                handler: value.handler,
+                handler: Arc::new(value.handler),
             },
         )
+    }
+}
+
+/// A websocket service request.
+#[pyclass(name = "Request", module = "foxglove")]
+pub struct PyRequest(foxglove::websocket::service::Request);
+
+#[pymethods]
+impl PyRequest {
+    /// The service name.
+    #[getter]
+    fn service_name(&self) -> &str {
+        self.0.service_name()
+    }
+
+    /// The call ID that uniquely identifies this request for this client.
+    #[getter]
+    fn call_id(&self) -> u32 {
+        self.0.call_id().into()
+    }
+
+    /// The request encoding.
+    #[getter]
+    fn encoding(&self) -> &str {
+        self.0.encoding()
+    }
+
+    /// The request payload.
+    #[getter]
+    fn payload(&self) -> &[u8] {
+        self.0.payload()
     }
 }
 

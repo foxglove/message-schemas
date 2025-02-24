@@ -6,31 +6,29 @@ schemas.
 """
 
 import atexit
+import logging
 from contextlib import contextmanager
 from typing import Callable, Iterator, List, Optional, Protocol, Union
+
 from ._foxglove_py import (
-    ClientChannelView,
-    Client,
-    MCAPWriter,
-    StatusLevel,
-    WebSocketServer,
-    record_file,
-    enable_logging,
-    disable_logging,
-    shutdown,
     Capability,
+    Client,
+    ClientChannelView,
+    MCAPWriter,
+    MessageSchema,
+    Request,
+    Schema,
     Service,
     ServiceSchema,
-    MessageSchema,
-    Schema,
+    StatusLevel,
+    WebSocketServer,
+    disable_logging,
+    enable_logging,
+    record_file,
+    shutdown,
 )
-
 from ._foxglove_py import start_server as _start_server
-
-
-from .channel import Channel, log, SchemaDefinition
-
-import logging
+from .channel import Channel, SchemaDefinition, log
 
 logging.basicConfig(
     level=logging.DEBUG, format="%(asctime)s [%(levelname)s] %(message)s"
@@ -57,7 +55,7 @@ class ServerListener(Protocol):
         pass
 
 
-ServiceHandler = Callable[["Client", str, int, str, bytes], bytes]
+ServiceHandler = Callable[["Client", "Request"], bytes]
 
 
 def start_server(
@@ -141,9 +139,16 @@ def new_mcap_file(fname: str) -> Iterator[None]:
 __all__ = [
     "Capability",
     "Channel",
+    "Client",
     "MCAPWriter",
+    "MessageSchema",
+    "Request",
+    "Schema",
     "SchemaDefinition",
     "ServerListener",
+    "Service",
+    "ServiceHandler",
+    "ServiceSchema",
     "StatusLevel",
     "WebSocketServer",
     "log",
@@ -152,9 +157,4 @@ __all__ = [
     "start_server",
     "verbose_off",
     "verbose_on",
-    "Service",
-    "ServiceSchema",
-    "MessageSchema",
-    "Schema",
-    "ServiceHandler",
 ]
