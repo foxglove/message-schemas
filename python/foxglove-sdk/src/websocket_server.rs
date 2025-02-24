@@ -241,6 +241,13 @@ impl PyWebSocketServer {
             server.remove_status(status_ids);
         };
     }
+
+    /// Publishes parameter values to all subscribed clients.
+    pub fn publish_parameter_values(&self, parameters: Vec<PyParameter>) {
+        if let Some(server) = &self.0 {
+            server.publish_parameter_values(parameters.into_iter().map(Into::into).collect());
+        }
+    }
 }
 
 /// The level of a :py:class:`Status` message
@@ -258,13 +265,6 @@ impl From<PyStatusLevel> for StatusLevel {
             PyStatusLevel::Info => StatusLevel::Info,
             PyStatusLevel::Warning => StatusLevel::Warning,
             PyStatusLevel::Error => StatusLevel::Error,
-        }
-    }
-
-    /// Publishes parameter values to all subscribed clients.
-    pub fn publish_parameter_values(&self, parameters: Vec<PyParameter>) {
-        if let Some(server) = &self.0 {
-            server.publish_parameter_values(parameters.into_iter().map(Into::into).collect());
         }
     }
 }
