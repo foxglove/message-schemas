@@ -1,7 +1,7 @@
 import time
 import unittest
 
-from foxglove import start_server, StatusLevel
+from foxglove import start_server, Capability, Service, ServiceSchema, StatusLevel
 
 
 class TestServer(unittest.TestCase):
@@ -14,4 +14,18 @@ class TestServer(unittest.TestCase):
         server.broadcast_time(time.time_ns())
         server.remove_status(["some-id"])
         server.clear_session()
+        server.stop()
+
+    def test_services_interface(self) -> None:
+        server = start_server(
+            capabilities=[Capability.Services],
+            supported_encodings=["json"],
+            services=[
+                Service(
+                    name="test",
+                    schema=ServiceSchema(name="test-schema"),
+                    handler=lambda _svc, _client, _cid, _enc, _bytes: b"{}",
+                ),
+            ],
+        )
         server.stop()
