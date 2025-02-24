@@ -1,19 +1,18 @@
 import argparse
 import logging
 import time
-import mcap
-
 from typing import Optional
 
-from foxglove import (
-    start_server,
-    Channel,
-    SchemaDefinition,
-    Capability,
-    WebSocketServer,
-)
+import mcap
 import mcap.reader
 import mcap.records
+from foxglove import (
+    Capability,
+    Channel,
+    SchemaDefinition,
+    WebSocketServer,
+    start_server,
+)
 
 channels: dict[str, Channel] = {}
 

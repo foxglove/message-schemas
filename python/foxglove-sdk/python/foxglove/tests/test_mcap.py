@@ -1,6 +1,6 @@
-from pathlib import Path
 import tempfile
 import unittest
+from pathlib import Path
 
 from foxglove import open_mcap
 from foxglove.channel import Channel

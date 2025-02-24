@@ -1,7 +1,7 @@
 import argparse
 import inspect
-import foxglove
 
+import foxglove
 from foxglove.channels import LogChannel
 from foxglove.schemas import Log, LogLevel
 
