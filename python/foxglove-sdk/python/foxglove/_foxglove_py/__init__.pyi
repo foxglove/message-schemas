@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, List, Optional, Protocol, Tuple
+from typing import Any, List, Optional, Tuple
 
 class MCAPWriter:
     """
@@ -54,33 +54,10 @@ class BaseChannel:
     def log(
         self,
         msg: bytes,
-        publish_time: Optional[int] = None,
         log_time: Optional[int] = None,
+        publish_time: Optional[int] = None,
         sequence: Optional[int] = None,
     ) -> None: ...
-
-class PartialMetadata:
-    """
-    Structured metadata for use with logging. All fields are optional.
-    """
-
-    def __new__(
-        cls,
-        sequence: Optional[int] = None,
-        log_time: Optional[int] = None,
-        publish_time: Optional[int] = None,
-    ) -> "PartialMetadata":
-        """
-        :param sequence: The sequence number is unique per channel and allows for ordering of
-            messages as well as detecting missing messages. If omitted, a monotonically increasing
-            sequence number unique to the channel is used.
-        :param log_time: The log time is the time, as nanoseconds from the unix epoch, that the
-            message was recorded. Usually this is the time log() is called. If omitted, the
-            current time is used.
-        :param publish_time: The publish_time is the time at which the message was published. e.g.
-            the timestamp at which the sensor reading was taken. If omitted, log time is used.
-        """
-        ...
 
 class Capability(Enum):
     """
