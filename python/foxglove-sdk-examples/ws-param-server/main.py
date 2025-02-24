@@ -27,7 +27,9 @@ class ParameterStore(foxglove.ServerListener):
         request_id: Optional[str] = None,
     ) -> list[Parameter]:
         logging.debug(f"on_get_parameters: {param_names}, {client.id}, {request_id}")
-        return self.parameters
+        if not param_names:
+            return self.parameters
+        return [p for p in self.parameters if p.name in param_names]
 
     def on_set_parameters(
         self,
