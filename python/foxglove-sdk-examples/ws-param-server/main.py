@@ -47,6 +47,16 @@ class ParameterStore(foxglove.ServerListener):
                 self.parameters[changed_param.name] = changed_param
         return parameters
 
+    def on_parameters_subscribe(self, param_names: foxglove.List[str]) -> None:
+        # The SDK takes care of notifying the client of the current parameters;
+        # this is informational only.
+        logging.debug(f"Subscribed parameters: {param_names}")
+
+    def on_parameters_unsubscribe(self, param_names: foxglove.List[str]) -> None:
+        # The SDK takes care of notifying the client of the current parameters;
+        # this is informational only.
+        logging.debug(f"Unsubscribed parameters: {param_names}")
+
 
 def main() -> None:
     foxglove.verbose_on()
@@ -73,7 +83,12 @@ def main() -> None:
 
     websocket_server = foxglove.start_server(
         server_listener=store,
-        capabilities=[Capability.Parameters],
+        capabilities=[
+            # 'Parameters' is required for get/set callbacks
+            Capability.Parameters,
+            # 'ParametersSubscribe' is required to receive subscribe & unsubscribe callbacks
+            Capability.ParametersSubscribe,
+        ],
     )
 
     try:
