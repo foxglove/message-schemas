@@ -55,7 +55,7 @@ impl ConnectionGraphDiff<'_> {
 
 /// The connection graph data. Requires capability [`Capability::ConnectionGraph`].
 /// See https://github.com/foxglove/ws-protocol/blob/main/docs/spec.md#connection-graph-update
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct ConnectionGraph {
     /// A map of active topic names to the set of string publisher ids.
     pub published_topics: MapOfSets,
