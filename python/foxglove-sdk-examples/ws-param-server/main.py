@@ -17,7 +17,8 @@ from foxglove import ParameterType, ParameterValue, Parameter
 
 class ParameterStore(foxglove.ServerListener):
     def __init__(self, parameters: list[Parameter]) -> None:
-        self.parameters = parameters
+        # In this example our parameters are unique by name
+        self.parameters = {param.name: param for param in parameters}
 
     # Foxglove server callback
     def on_get_parameters(
@@ -28,8 +29,10 @@ class ParameterStore(foxglove.ServerListener):
     ) -> list[Parameter]:
         logging.debug(f"on_get_parameters: {param_names}, {client.id}, {request_id}")
         if not param_names:
-            return self.parameters
-        return [p for p in self.parameters if p.name in param_names]
+            return list(self.parameters.values())
+        return [
+            self.parameters[name] for name in param_names if name in self.parameters
+        ]
 
     def on_set_parameters(
         self,
@@ -38,24 +41,12 @@ class ParameterStore(foxglove.ServerListener):
         request_id: str | None = None,
     ) -> list[foxglove.Parameter]:
         logging.debug(f"on_set_parameters: {parameters}, {client.id}, {request_id}")
-        existing_names = [p.name for p in self.parameters]
         for changed_param in parameters:
-            if changed_param.name not in existing_names:
-                # Add
-                self.parameters.append(changed_param)
-            elif changed_param.value is None:
-                # Remove
-                self.parameters = [
-                    param
-                    for param in self.parameters
-                    if param.name != changed_param.name
-                ]
+            if changed_param.value is None:
+                del self.parameters[changed_param.name]
             else:
-                # Update
-                self.parameters = [
-                    param if param.name != changed_param.name else changed_param
-                    for param in self.parameters
-                ]
+                # Add or update
+                self.parameters[changed_param.name] = changed_param
         return parameters
 
 
@@ -89,8 +80,8 @@ def main() -> None:
 
     try:
         while True:
-            websocket_server.publish_parameter_values(store.parameters)
-            time.sleep(1)
+            websocket_server.publish_parameter_values(list(store.parameters.values()))
+            time.sleep(10)
     except KeyboardInterrupt:
         websocket_server.stop()
 

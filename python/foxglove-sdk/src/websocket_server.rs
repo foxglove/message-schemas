@@ -219,7 +219,7 @@ impl PyWebSocketServer {
         Ok(())
     }
 
-    /// Publishes parameter values to all clients.
+    /// Publishes parameter values to all subscribed clients.
     pub fn publish_parameter_values(&self, parameters: Vec<PyParameter>) {
         if let Some(server) = &self.0 {
             server.publish_parameter_values(parameters.into_iter().map(Into::into).collect());
