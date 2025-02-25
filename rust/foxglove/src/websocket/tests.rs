@@ -548,7 +548,7 @@ async fn test_error_status_message() {
 async fn test_service_registration_not_supported() {
     // Can't register services if we don't declare support.
     let server = create_server(ServerOptions::default());
-    let svc = Service::builder("/s", ServiceSchema::new("")).sync_handler_fn(|_, _| Err(""));
+    let svc = Service::builder("/s", ServiceSchema::new("")).sync_handler_fn(|_| Err(""));
     assert_matches!(
         server.add_services(vec![svc]),
         Err(FoxgloveError::ServicesNotSupported)
@@ -562,7 +562,7 @@ async fn test_service_registration_missing_request_encoding() {
         capabilities: Some(HashSet::from([Capability::Services])),
         ..Default::default()
     });
-    let svc = Service::builder("/s", ServiceSchema::new("")).sync_handler_fn(|_, _| Err(""));
+    let svc = Service::builder("/s", ServiceSchema::new("")).sync_handler_fn(|_| Err(""));
     assert_matches!(
         server.add_services(vec![svc]),
         Err(FoxgloveError::MissingRequestEncoding(_))
@@ -572,7 +572,7 @@ async fn test_service_registration_missing_request_encoding() {
 #[tokio::test]
 async fn test_service_registration_duplicate_name() {
     // Can't register a service with no encoding unless we declare global encodings.
-    let sa1 = Service::builder("/a", ServiceSchema::new("")).sync_handler_fn(|_, _| Err(""));
+    let sa1 = Service::builder("/a", ServiceSchema::new("")).sync_handler_fn(|_| Err(""));
     let server = create_server(ServerOptions {
         capabilities: Some(HashSet::from([Capability::Services])),
         services: HashMap::from([(sa1.name().to_string(), sa1)]),
@@ -580,14 +580,14 @@ async fn test_service_registration_duplicate_name() {
         ..Default::default()
     });
 
-    let sa2 = Service::builder("/a", ServiceSchema::new("")).sync_handler_fn(|_, _| Err(""));
+    let sa2 = Service::builder("/a", ServiceSchema::new("")).sync_handler_fn(|_| Err(""));
     assert_matches!(
         server.add_services(vec![sa2]),
         Err(FoxgloveError::DuplicateService(_))
     );
 
-    let sb1 = Service::builder("/b", ServiceSchema::new("")).sync_handler_fn(|_, _| Err(""));
-    let sb2 = Service::builder("/b", ServiceSchema::new("")).sync_handler_fn(|_, _| Err(""));
+    let sb1 = Service::builder("/b", ServiceSchema::new("")).sync_handler_fn(|_| Err(""));
+    let sb2 = Service::builder("/b", ServiceSchema::new("")).sync_handler_fn(|_| Err(""));
     assert_matches!(
         server.add_services(vec![sb1, sb2]),
         Err(FoxgloveError::DuplicateService(_))
@@ -1070,7 +1070,7 @@ async fn test_get_parameters() {
 async fn test_services() {
     let ok_svc = Service::builder("/ok", ServiceSchema::new("plain"))
         .with_id(ServiceId::new(1))
-        .handler_fn(|_, req, resp| {
+        .handler_fn(|req, resp| {
             assert_eq!(req.service_id(), ServiceId::new(1));
             assert_eq!(req.service_name(), "/ok");
             assert_eq!(req.call_id(), CallId::new(99));
@@ -1152,7 +1152,7 @@ async fn test_services() {
     // Register a new service.
     let err_svc = Service::builder("/err", ServiceSchema::new("plain"))
         .with_id(ServiceId::new(2))
-        .sync_handler_fn(|_, _| Err("oh noes"));
+        .sync_handler_fn(|_| Err("oh noes"));
     server
         .add_services(vec![err_svc])
         .expect("Failed to add service");

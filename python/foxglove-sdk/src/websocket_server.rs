@@ -252,19 +252,17 @@ struct ServiceHandler {
 impl foxglove::websocket::service::Handler for ServiceHandler {
     fn call(
         &self,
-        client: Client,
         request: foxglove::websocket::service::Request,
         responder: foxglove::websocket::service::Responder,
     ) {
         let handler = self.handler.clone();
-        let client = PyClient::from(client);
         let request = PyRequest(request);
         // Punt the callback to a blocking thread.
         tokio::task::spawn_blocking(move || {
             let result = Python::with_gil(|py| {
                 handler
                     .bind(py)
-                    .call((client, request), None)
+                    .call((request,), None)
                     .and_then(|data| data.extract::<Vec<u8>>())
             })
             .map(Bytes::from)
@@ -492,6 +490,12 @@ impl PyRequest {
     #[getter]
     fn service_name(&self) -> &str {
         self.0.service_name()
+    }
+
+    /// The client ID.
+    #[getter]
+    fn client_id(&self) -> u32 {
+        self.0.client_id().into()
     }
 
     /// The call ID that uniquely identifies this request for this client.

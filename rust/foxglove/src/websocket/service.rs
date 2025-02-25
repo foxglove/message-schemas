@@ -7,8 +7,6 @@ use std::sync::Arc;
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 
-use crate::websocket::Client;
-
 mod handler;
 mod request;
 mod response;
@@ -110,7 +108,7 @@ impl ServiceBuilder {
     /// Refer to [`Handler::call`] for a description of the `call` function.
     pub fn handler_fn<F>(self, call: F) -> Service
     where
-        F: Fn(Client, Request, Responder) + Send + Sync + 'static,
+        F: Fn(Request, Responder) + Send + Sync + 'static,
     {
         self.handler(HandlerFn(call))
     }
@@ -120,7 +118,7 @@ impl ServiceBuilder {
     /// Refer to [`SyncHandler::call`] for a description of the `call` function.
     pub fn sync_handler_fn<F, E>(self, call: F) -> Service
     where
-        F: Fn(Client, Request) -> Result<Bytes, E> + Send + Sync + 'static,
+        F: Fn(Request) -> Result<Bytes, E> + Send + Sync + 'static,
         E: Display + 'static,
     {
         self.handler(SyncHandlerFn(call))
@@ -178,7 +176,7 @@ impl Service {
     }
 
     /// Invokes the service call implementation.
-    pub(crate) fn call(&self, client: Client<'_>, request: Request, responder: Responder) {
-        self.handler.call(client, request, responder);
+    pub(crate) fn call(&self, request: Request, responder: Responder) {
+        self.handler.call(request, responder);
     }
 }

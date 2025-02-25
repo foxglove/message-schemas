@@ -144,7 +144,7 @@ class ServerListener(Protocol):
         return None
 
 
-ServiceHandler = Callable[["Client", "Request"], bytes]
+ServiceHandler = Callable[["Request"], bytes]
 
 
 def start_server(

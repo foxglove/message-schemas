@@ -5,7 +5,7 @@ use std::time::Duration;
 use anyhow::{Context, Result};
 use bytes::Bytes;
 use foxglove::websocket::service::{Request, Service, ServiceSchema, SyncHandler};
-use foxglove::websocket::{Capability, Client};
+use foxglove::websocket::Capability;
 use foxglove::Schema;
 use tracing::info;
 
@@ -26,9 +26,9 @@ pub async fn main(config: Config) -> Result<()> {
     server
         .add_services([
             Service::builder("/empty", empty_schema())
-                .sync_handler_fn(|_, _| anyhow::Ok(Bytes::new())),
+                .sync_handler_fn(|_| anyhow::Ok(Bytes::new())),
             Service::builder("/echo", echo_schema())
-                .sync_handler_fn(|_, req| anyhow::Ok(req.into_payload())),
+                .sync_handler_fn(|req| anyhow::Ok(req.into_payload())),
         ])
         .context("Failed to register services")?;
 
@@ -38,7 +38,7 @@ pub async fn main(config: Config) -> Result<()> {
     // invoking `resp.respond()` to complete the request.
     server
         .add_services([
-            Service::builder("/sleep", empty_schema()).handler_fn(|_, _, resp| {
+            Service::builder("/sleep", empty_schema()).handler_fn(|_, resp| {
                 tokio::spawn(async move {
                     tokio::time::sleep(Duration::from_secs(1)).await;
                     resp.respond(Ok(Bytes::new()))
@@ -100,10 +100,11 @@ fn set_bool_schema() -> ServiceSchema {
 }
 
 /// A stateless handler function.
-fn int_bin_handler(client: Client, req: Request) -> Result<Bytes> {
+fn int_bin_handler(req: Request) -> Result<Bytes> {
     let service_name = req.service_name();
+    let client_id = req.client_id();
     let req: IntBinRequest = serde_json::from_slice(req.payload())?;
-    info!("Client {:?}: {service_name}: {req:?}", client.id());
+    info!("Client {client_id:?}: {service_name}: {req:?}");
 
     // Shared handlers can use `Request::service_name` to disambiguate the service endpoint.
     // Service names are guaranteed to be unique.
@@ -126,10 +127,11 @@ struct Flag(Arc<AtomicBool>);
 impl SyncHandler for Flag {
     type Error = anyhow::Error;
 
-    fn call(&self, client: Client, req: Request) -> Result<Bytes, Self::Error> {
+    fn call(&self, req: Request) -> Result<Bytes, Self::Error> {
         // Decode the payload.
+        let client_id = req.client_id();
         let req: SetBoolRequest = serde_json::from_slice(req.payload())?;
-        info!("Client {:?}: {req:?}", client.id());
+        info!("Client {client_id:?}: {req:?}");
 
         // Update the flag.
         let prev = self.0.swap(req.data, std::sync::atomic::Ordering::Relaxed);
