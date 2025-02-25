@@ -172,12 +172,30 @@ def verbose_on(level: Union[int, str] = "INFO") -> None:
     logging.basicConfig(level=level, format="%(asctime)s [%(levelname)s] %(message)s")
 
     if isinstance(level, str):
-        level_map = logging.getLevelNamesMapping()
+        level_map = (
+            logging.getLevelNamesMapping()
+            if hasattr(logging, "getLevelNamesMapping")
+            else _level_names()
+        )
         level = level_map[level]
     else:
         level = max(0, min(2**32 - 1, level))
 
     enable_logging(level)
+
+
+def _level_names() -> dict[str, int]:
+    # Fallback for Python <3.11; no support for custom levels
+    return {
+        "CRITICAL": logging.CRITICAL,
+        "FATAL": logging.FATAL,
+        "ERROR": logging.ERROR,
+        "WARN": logging.WARNING,
+        "WARNING": logging.WARNING,
+        "INFO": logging.INFO,
+        "DEBUG": logging.DEBUG,
+        "NOTSET": logging.NOTSET,
+    }
 
 
 def verbose_off() -> None:
