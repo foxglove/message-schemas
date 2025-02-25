@@ -50,9 +50,7 @@ poetry run flake8 .
 
 ### Examples
 
-```sh
-poetry run python python/examples/live_visualization.py
-```
+Examples exist in the `foxglove-sdk-examples` directotry. See each example's readme for usage.
 
 ### Documentation
 
