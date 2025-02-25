@@ -170,7 +170,7 @@ def verbose_on(level: Union[int, str] = "INFO") -> None:
     This function will call logging.basicConfig() for convenience in scripts, but in general you
     should configure logging yourself: https://docs.python.org/3/library/logging.html
     """
-    # This will raise a ValueError for invalid levels.
+    # This will raise a ValueError for invalid levels if the user has not already configured
     logging.basicConfig(level=level, format="%(asctime)s [%(levelname)s] %(message)s")
 
     if isinstance(level, str):
@@ -179,7 +179,10 @@ def verbose_on(level: Union[int, str] = "INFO") -> None:
             if hasattr(logging, "getLevelNamesMapping")
             else _level_names()
         )
-        level = level_map[level]
+        try:
+            level = level_map[level]
+        except KeyError:
+            raise ValueError(f"Unknown log level: {level}")
     else:
         level = max(0, min(2**32 - 1, level))
 
