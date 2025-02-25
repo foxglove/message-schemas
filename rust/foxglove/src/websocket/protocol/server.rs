@@ -3,6 +3,7 @@ use crate::channel::ChannelId;
 use crate::websocket::service::CallId;
 use crate::websocket::service::ServiceId;
 use crate::websocket::service::{self, Service};
+use crate::websocket::Capability;
 use crate::FoxgloveError;
 use base64::prelude::*;
 use bytes::{BufMut, Bytes, BytesMut};
@@ -138,27 +139,10 @@ pub struct RemoveStatus {
 }
 
 /// A capability that the websocket server advertises to its clients.
-#[derive(Debug, Serialize, Eq, PartialEq, Hash, Clone)]
-#[serde(rename_all = "camelCase")]
-pub enum Capability {
-    /// Allow clients to advertise channels to send data messages to the server.
-    ClientPublish,
-    /// Allow clients to get & set parameters, and subscribe to updates.
-    Parameters,
-    /// Inform clients about the latest server time.
-    ///
-    /// This allows accelerated, slowed, or stepped control over the progress of time. If the
-    /// server publishes time data, then timestamps of published messages must originate from the
-    /// same time source.
-    #[cfg(feature = "unstable")]
-    Time,
-    /// Allow clients to call services.
-    Services,
-}
-
-/// ws-protocol includes a "parametersSubscribe" capability in addition to "parameters".
-/// Because the SDK handles subscription management internally, we only expose the latter publicly.
-#[derive(Debug, Serialize, Eq, PartialEq, Hash)]
+///
+/// ws-protocol includes a "parametersSubscribe" capability in addition to "parameters"; because the
+/// SDK handles subscription management internally, we only expose the latter publicly.
+#[derive(Debug, Serialize, Eq, PartialEq, Hash, Clone, Copy)]
 #[serde(rename_all = "camelCase")]
 enum ProtocolCapability {
     ParametersSubscribe,
