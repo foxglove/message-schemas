@@ -163,7 +163,7 @@ def start_server(
     )
 
 
-def verbose_on(level: Union[int, str] = logging.INFO) -> None:
+def verbose_on(level: Union[int, str] = "INFO") -> None:
     """
     Enable SDK logging.
     """
