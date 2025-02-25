@@ -11,8 +11,8 @@ from typing import List, Optional, Protocol, Union
 
 from ._foxglove_py import (
     Capability,
-    Client,
     ChannelView,
+    Client,
     MCAPWriter,
     Parameter,
     ParameterType,
