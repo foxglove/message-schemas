@@ -32,7 +32,8 @@ use tokio_tungstenite::{
 };
 use tokio_util::sync::CancellationToken;
 
-mod asset_responder;
+mod fetch_asset;
+pub use fetch_asset::{AssetHandler, AssetResponder, AsyncHandler, FetchAssetResult, SyncHandler};
 mod protocol;
 pub mod service;
 #[cfg(test)]
@@ -40,7 +41,6 @@ mod tests;
 #[cfg(all(test, feature = "unstable"))]
 mod unstable_tests;
 
-pub use asset_responder::AssetResponder;
 use service::{CallId, Service, ServiceId};
 
 /// Identifies a client connection. Unique for the duration of the server's lifetime.
@@ -48,7 +48,7 @@ use service::{CallId, Service, ServiceId};
 pub struct ClientId(u32);
 
 /// A connected client session with the websocket server.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Client {
     id: ClientId,
     client: Weak<ConnectedClient>,
@@ -67,24 +67,20 @@ impl Client {
         self.id
     }
 
-    /// Send a status message to this client.
+    /// Send a status message to this client. Does nothing if client is disconnected.
     pub fn send_status(&self, status: Status) {
         if let Some(client) = self.client.upgrade() {
             client.send_status(status);
         }
     }
 
-    /// Send a fetch asset error response to the client.
-    pub(crate) fn send_asset_error(&self, error: &str, request_id: u32) {
+    /// Send a fetch asset response to the client. Does nothing if client is disconnected.
+    pub(crate) fn send_asset_response(&self, result: FetchAssetResult, request_id: u32) {
         if let Some(client) = self.client.upgrade() {
-            client.send_asset_error(error, request_id);
-        }
-    }
-
-    /// Send a successful fetch asset response to the client.
-    pub(crate) fn send_asset_response(&self, response: &[u8], request_id: u32) {
-        if let Some(client) = self.client.upgrade() {
-            client.send_asset_response(response, request_id);
+            match result {
+                Ok(asset) => client.send_asset_response(&asset, request_id),
+                Err(error) => client.send_asset_error(&error, request_id),
+            }
         }
     }
 }
@@ -153,6 +149,7 @@ pub(crate) struct ServerOptions {
     pub services: HashMap<String, Service>,
     pub supported_encodings: Option<HashSet<String>>,
     pub runtime: Option<Handle>,
+    pub fetch_asset_handler: Option<Box<dyn AssetHandler>>,
 }
 
 impl std::fmt::Debug for ServerOptions {
@@ -162,6 +159,8 @@ impl std::fmt::Debug for ServerOptions {
             .field("name", &self.name)
             .field("message_backlog_size", &self.message_backlog_size)
             .field("services", &self.services)
+            .field("capabilities", &self.capabilities)
+            .field("supported_encodings", &self.supported_encodings)
             .finish()
     }
 }
@@ -194,6 +193,8 @@ pub(crate) struct Server {
     cancellation_token: CancellationToken,
     /// Registered services.
     services: parking_lot::RwLock<HashMap<ServiceId, Arc<Service>>>,
+    /// Handler for fetch asset requests
+    fetch_asset_handler: Option<Box<dyn AssetHandler>>,
 }
 
 /// Provides a mechanism for registering callbacks for handling client message events.
@@ -246,8 +247,6 @@ pub trait ServerListener: Send + Sync {
     fn on_parameters_subscribe(&self, _param_names: Vec<String>) {}
     /// Callback invoked when a client unsubscribes from parameters. Requires [`Capability::ParametersSubscribe`].
     fn on_parameters_unsubscribe(&self, _param_names: Vec<String>) {}
-    /// Callback invoked when a client requests an asset.
-    fn on_fetch_asset(&self, _uri: String, _responder: AssetResponder) {}
 }
 
 /// A connected client session with the websocket server.
@@ -816,9 +815,11 @@ impl ConnectedClient {
             return;
         }
 
-        let asset_responder = AssetResponder::new(Client::new(self), request_id);
-        if let Some(handler) = self.server_listener.as_ref() {
-            handler.on_fetch_asset(uri, asset_responder);
+        if let Some(handler) = server.fetch_asset_handler.as_ref() {
+            let asset_responder = AssetResponder::new(Client::new(self), request_id);
+            handler.fetch(server.runtime(), uri, asset_responder);
+        } else {
+            self.send_asset_error("Server does not have a fetch asset handler", request_id);
         }
     }
 
@@ -930,6 +931,7 @@ impl Server {
                     .map(|s| (s.id(), Arc::new(s)))
                     .collect(),
             ),
+            fetch_asset_handler: None,
         }
     }
 

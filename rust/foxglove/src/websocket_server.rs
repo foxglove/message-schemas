@@ -4,7 +4,9 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 use crate::websocket::service::{Service, ServiceId};
-use crate::websocket::{create_server, Capability, Parameter, Server, ServerOptions, Status};
+use crate::websocket::{
+    create_server, AssetHandler, Capability, Parameter, Server, ServerOptions, Status,
+};
 use crate::{get_runtime_handle, FoxgloveError, LogContext, LogSink};
 use tokio::runtime::Handle;
 use tracing::warn;
@@ -66,6 +68,12 @@ impl WebSocketServer {
     /// Configure an event listener to receive client message events.
     pub fn listener(mut self, listener: Arc<dyn crate::websocket::ServerListener>) -> Self {
         self.options.listener = Some(listener);
+        self
+    }
+
+    /// Configure the handler for fetching assets.
+    pub fn fetch_asset_handler(mut self, handler: Box<dyn AssetHandler>) -> Self {
+        self.options.fetch_asset_handler = Some(handler);
         self
     }
 
