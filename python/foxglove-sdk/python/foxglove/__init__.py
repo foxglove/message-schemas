@@ -27,10 +27,6 @@ from ._foxglove_py import (
 from ._foxglove_py import start_server as _start_server
 from .channel import Channel, SchemaDefinition, log
 
-logging.basicConfig(
-    level=logging.DEBUG, format="%(asctime)s [%(levelname)s] %(message)s"
-)
-
 atexit.register(shutdown)
 
 
@@ -167,28 +163,20 @@ def start_server(
     )
 
 
-def _log_level_from_int(level: int) -> str:
-    log_levels = {10: "debug", 20: "info", 30: "warn", 40: "error"}
-    return log_levels.get(level, "unknown")
-
-
-def verbose_on(level: Union[int, str] = "debug") -> None:
+def verbose_on(level: Union[int, str] = logging.INFO) -> None:
     """
     Enable SDK logging.
     """
-    if isinstance(level, int):
-        assert level in [
-            logging.DEBUG,
-            logging.INFO,
-            logging.WARN,
-            logging.ERROR,
-        ], ValueError("Invalid log level")
-        level = _log_level_from_int(level)
+    # For convenience in quick scripts, set basic config if the user hasn't already.
+    # This will raise a ValueError for invalid levels.
+    logging.basicConfig(level=level, format="%(asctime)s [%(levelname)s] %(message)s")
+
+    if isinstance(level, str):
+        level_map = logging.getLevelNamesMapping()
+        level = level_map[level]
     else:
-        assert level in ["debug", "info", "warn", "error"], ValueError(
-            "Invalid log level"
-        )
-    logging.debug(f"SDK logging enabled ({level.upper()})")
+        level = max(0, min(2**32 - 1, level))
+
     enable_logging(level)
 
 
@@ -196,7 +184,6 @@ def verbose_off() -> None:
     """
     Disable SDK logging.
     """
-    logging.debug("SDK logging disabled")
     disable_logging()
 
 

@@ -165,7 +165,7 @@ def start_server(
     """
     ...
 
-def enable_logging(level: str) -> None:
+def enable_logging(level: int) -> None:
     """
     Forward SDK logs to python's logging facility.
     """
