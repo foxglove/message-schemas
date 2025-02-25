@@ -1,0 +1,13 @@
+[package]
+name = "foxglove_sdk_cxxbridge"
+version = "0.2.1"
+edition = "2021"
+publish = false
+
+[lib]
+name = "foxglove_sdk_cxxbridge"
+crate-type = ["staticlib"]
+
+[dependencies]
+cxx = "1.0"
+foxglove = { path = "../../rust/foxglove", features = ["unstable"] }
