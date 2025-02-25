@@ -159,7 +159,7 @@ pub fn server_info(
 ) -> String {
     let mut caps: Vec<ProtocolCapability> = capabilities
         .iter()
-        .map(|c| ProtocolCapability::Capability(c.clone()))
+        .map(|c| ProtocolCapability::Capability(*c))
         .collect();
 
     if capabilities.contains(&Capability::Parameters) {
