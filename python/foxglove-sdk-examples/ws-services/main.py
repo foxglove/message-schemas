@@ -6,7 +6,6 @@ https://docs.foxglove.dev/docs/visualization/panels/service-call
 """
 
 import argparse
-import json
 import logging
 
 from foxglove import (
@@ -14,12 +13,12 @@ from foxglove import (
     Client,
     Request,
     Service,
-    ServiceHandler,
     ServiceSchema,
     start_server,
 )
 
 
+# A handler can also be a bare function.
 def logging_handler(
     client: Client,
     request: Request,
@@ -33,13 +32,7 @@ def logging_handler(
     return b"{}"
 
 
-# A handler can also be defined as a lambda
-greeting_handler: ServiceHandler = lambda *_: json.dumps(
-    {"message": "Hello, client!"}
-).encode("utf-8")
-
-
-# ...or any callable
+# A handler can also be defined as any callable.
 class EchoService:
     def __call__(
         self,
@@ -83,14 +76,6 @@ def main():
         handler=EchoService(),
     )
 
-    hello_service = Service(
-        name="hello",
-        schema=ServiceSchema(
-            name="hello-schema",
-        ),
-        handler=greeting_handler,
-    )
-
     server = start_server(
         name="ws-services-example",
         port=args.port,
@@ -100,7 +85,7 @@ def main():
         # These examples use json.
         supported_encodings=["json"],
         # The services to publish
-        services=[echo_service, hello_service, logging_service],
+        services=[echo_service, logging_service],
     )
 
     try:
