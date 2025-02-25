@@ -1,5 +1,6 @@
 //! Websocket services.
 
+use std::collections::HashMap;
 use std::fmt::Display;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
@@ -14,6 +15,8 @@ mod request;
 mod response;
 mod schema;
 mod semaphore;
+#[cfg(test)]
+mod tests;
 pub use handler::{Handler, SyncHandler};
 use handler::{HandlerFn, SyncHandlerFn};
 pub use request::Request;
@@ -24,7 +27,7 @@ pub(crate) use semaphore::Semaphore;
 
 /// A service ID, which uniquely identifies a service hosted by the server.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Deserialize, Serialize)]
-pub struct ServiceId(u32);
+pub(crate) struct ServiceId(u32);
 
 impl ServiceId {
     /// Creates a new service ID.
@@ -81,6 +84,7 @@ impl ServiceBuilder {
     fn new(name: impl Into<String>, schema: ServiceSchema) -> Self {
         static ID: AtomicU32 = AtomicU32::new(1);
         let id = ID.fetch_add(1, Ordering::Relaxed);
+        assert_ne!(id, 0);
         Self {
             id: ServiceId::new(id),
             name: name.into(),
@@ -153,7 +157,7 @@ impl Service {
     }
 
     /// Returns the service's ID.
-    pub fn id(&self) -> ServiceId {
+    pub(crate) fn id(&self) -> ServiceId {
         self.id
     }
 
@@ -180,5 +184,67 @@ impl Service {
     /// Invokes the service call implementation.
     pub(crate) fn call(&self, client: Client<'_>, request: Request, responder: Responder) {
         self.handler.call(client, request, responder);
+    }
+}
+
+#[derive(Default, Debug)]
+pub(crate) struct ServiceMap {
+    id: HashMap<ServiceId, Arc<Service>>,
+    name: HashMap<String, ServiceId>,
+}
+
+impl ServiceMap {
+    /// Constructs a service map from an iterable of services.
+    ///
+    /// Panics if service IDs and names are not unique.
+    pub fn from_iter(services: impl IntoIterator<Item = Service>) -> Self {
+        let iter = services.into_iter();
+        let size = iter.size_hint().0;
+        let id = HashMap::with_capacity(size);
+        let name = HashMap::with_capacity(size);
+        let mut map = Self { id, name };
+        for service in iter {
+            map.insert(service);
+        }
+        map
+    }
+
+    /// Inserts a service into the map.
+    ///
+    /// Panics if the service ID or name is not unique.
+    pub fn insert(&mut self, service: Service) {
+        let prev = self.name.insert(service.name().to_string(), service.id());
+        assert!(prev.is_none());
+        let prev = self.id.insert(service.id(), Arc::new(service));
+        assert!(prev.is_none());
+    }
+
+    /// Returns true if the map contains a service with the provided name.
+    pub fn contains_name(&mut self, name: impl AsRef<str>) -> bool {
+        self.name.contains_key(name.as_ref())
+    }
+
+    /// Returns true if the map contains a service with the provided ID.
+    pub fn contains_id(&mut self, id: ServiceId) -> bool {
+        self.id.contains_key(&id)
+    }
+
+    /// Removes a service by name.
+    pub fn remove_by_name(&mut self, name: impl AsRef<str>) -> Option<Arc<Service>> {
+        if let Some(id) = self.name.remove(name.as_ref()) {
+            self.id.remove(&id)
+        } else {
+            None
+        }
+    }
+
+    /// Returns an iterator over services.
+    pub fn values(&self) -> impl Iterator<Item = &Arc<Service>> {
+        self.id.values()
+    }
+
+    /// Looks up a service by ID.
+    pub fn get_by_id(&self, id: ServiceId) -> Option<Arc<Service>> {
+        self.id.get(&id).cloned()
     }
 }

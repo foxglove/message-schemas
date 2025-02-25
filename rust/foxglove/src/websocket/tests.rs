@@ -1071,7 +1071,6 @@ async fn test_services() {
     let ok_svc = Service::builder("/ok", ServiceSchema::new("plain"))
         .with_id(ServiceId::new(1))
         .handler_fn(|_, req, resp| {
-            assert_eq!(req.service_id(), ServiceId::new(1));
             assert_eq!(req.service_name(), "/ok");
             assert_eq!(req.call_id(), CallId::new(99));
             let payload = req.into_payload();
@@ -1227,7 +1226,7 @@ async fn test_services() {
     drop(client2);
 
     // Unregister services.
-    server.remove_services(&[ServiceId::new(1)]);
+    server.remove_services(["/ok"]);
     let msg = client1
         .next()
         .await
