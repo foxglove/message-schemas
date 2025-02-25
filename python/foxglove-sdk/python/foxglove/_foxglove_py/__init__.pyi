@@ -85,15 +85,15 @@ class Client:
     A client that is connected to a running websocket server.
     """
 
-    id = ...
+    id: int = ...
 
-class ClientChannelView:
+class ChannelView:
     """
-    Information about a client channel.
+    Information about a channel.
     """
 
-    id = ...
-    topic = ...
+    id: int = ...
+    topic: str = ...
 
 class Parameter:
     """

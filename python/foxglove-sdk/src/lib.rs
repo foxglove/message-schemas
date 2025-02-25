@@ -13,9 +13,9 @@ use std::io::BufWriter;
 use std::path::PathBuf;
 use std::sync::Arc;
 use websocket_server::{
-    start_server, PyCapability, PyClient, PyClientChannelView, PyMessageSchema, PyParameter,
+    start_server, PyCapability, PyChannelView, PyClient, PyMessageSchema, PyParameter,
     PyParameterType, PyParameterValue, PyRequest, PySchema, PyService, PyServiceSchema,
-    PyStatusLevel, PyWebSocketServer,
+    PyWebSocketServer,
 };
 
 mod errors;
@@ -210,7 +210,7 @@ fn _foxglove_py(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyWebSocketServer>()?;
     m.add_class::<PyCapability>()?;
     m.add_class::<PyClient>()?;
-    m.add_class::<PyClientChannelView>()?;
+    m.add_class::<PyChannelView>()?;
     m.add_class::<PyParameter>()?;
     m.add_class::<PyParameterType>()?;
     m.add_class::<PyParameterValue>()?;

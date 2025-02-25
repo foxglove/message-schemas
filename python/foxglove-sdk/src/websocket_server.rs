@@ -1,7 +1,7 @@
 use crate::errors::PyFoxgloveError;
 use bytes::Bytes;
 use foxglove::{
-    websocket::{Client, ClientChannelView, ServerListener, Status, StatusLevel},
+    websocket::{ChannelView, Client, ClientChannelView, ServerListener, Status, StatusLevel},
     WebSocketServer, WebSocketServerBlockingHandle,
 };
 use pyo3::{
@@ -11,6 +11,15 @@ use pyo3::{
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time;
+
+/// Information about a channel.
+#[pyclass(name = "ChannelView", module = "foxglove")]
+pub struct PyChannelView {
+    #[pyo3(get)]
+    id: u64,
+    #[pyo3(get)]
+    topic: Py<PyString>,
+}
 
 /// A client connected to a running websocket server.
 #[pyclass(name = "Client", module = "foxglove")]
@@ -35,15 +44,6 @@ impl From<Client<'_>> for PyClient {
     }
 }
 
-/// Information about a client channel.
-#[pyclass(name = "ClientChannelView", module = "foxglove")]
-pub struct PyClientChannelView {
-    #[pyo3(get)]
-    id: u32,
-    #[pyo3(get)]
-    topic: Py<PyString>,
-}
-
 /// A mechanism to register callbacks for handling client message events.
 ///
 /// Implementations of ServerListener which call the python methods. foxglove/__init__.py defines
@@ -60,13 +60,43 @@ pub struct PyServerListener {
 }
 
 impl ServerListener for PyServerListener {
+    /// Callback invoked when a client subscribes to a channel.
+    fn on_subscribe(&self, client: Client, channel: ChannelView) {
+        let channel_id = channel.id().into();
+        self.call_client_channel_method("on_subscribe", client, channel_id, channel.topic());
+    }
+
+    /// Callback invoked when a client unsubscribes from a channel.
+    fn on_unsubscribe(&self, client: Client, channel: ChannelView) {
+        let channel_id = channel.id().into();
+        self.call_client_channel_method("on_unsubscribe", client, channel_id, channel.topic());
+    }
+
+    /// Callback invoked when a client advertises a client channel.
+    fn on_client_advertise(&self, client: Client, channel: ClientChannelView) {
+        let channel_id = channel.id().into();
+        self.call_client_channel_method("on_client_advertise", client, channel_id, channel.topic());
+    }
+
+    /// Callback invoked when a client unadvertises a client channel.
+    fn on_client_unadvertise(&self, client: Client, channel: ClientChannelView) {
+        let channel_id = channel.id().into();
+        self.call_client_channel_method(
+            "on_client_unadvertise",
+            client,
+            channel_id,
+            channel.topic(),
+        );
+    }
+
+    /// Callback invoked when a client message is received.
     fn on_message_data(&self, client: Client, channel: ClientChannelView, payload: &[u8]) {
         let client_info = PyClient {
             id: client.id().into(),
         };
 
         let result: PyResult<()> = Python::with_gil(|py| {
-            let channel_view = PyClientChannelView {
+            let channel_view = PyChannelView {
                 id: channel.id().into(),
                 topic: PyString::new(py, channel.topic()).into(),
             };
@@ -171,6 +201,40 @@ impl ServerListener for PyServerListener {
             self.listener
                 .bind(py)
                 .call_method("on_parameters_unsubscribe", args, None)?;
+
+            Ok(())
+        });
+
+        if let Err(err) = result {
+            tracing::error!("Callback failed: {}", err.to_string());
+        }
+    }
+}
+
+impl PyServerListener {
+    /// Call the named python method on behalf any of the ServerListener callbacks which supply a
+    /// client and channel view, and return nothing.
+    fn call_client_channel_method(
+        &self,
+        method_name: &str,
+        client: Client,
+        channel_id: u64,
+        topic: &str,
+    ) {
+        let client_info = PyClient {
+            id: client.id().into(),
+        };
+
+        let result: PyResult<()> = Python::with_gil(|py| {
+            let channel_view = PyChannelView {
+                id: channel_id,
+                topic: PyString::new(py, topic).into(),
+            };
+
+            let args = (client_info, channel_view);
+            self.listener
+                .bind(py)
+                .call_method(method_name, args, None)?;
 
             Ok(())
         });

@@ -17,11 +17,7 @@ pipx install poetry
 poetry install
 ```
 
-Examples are available in `python/examples`. To run the websocket example:
-
-```sh
-poetry run python python/examples/live_visualization.py
-```
+Examples are available in [foxglove-sdk-examples](https://github.com/foxglove/foxglove-sdk/tree/main/python/foxglove-sdk-examples).
 
 ## Overview
 

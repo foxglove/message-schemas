@@ -11,8 +11,8 @@ from typing import Callable, List, Optional, Protocol, Union
 
 from ._foxglove_py import (
     Capability,
+    ChannelView,
     Client,
-    ClientChannelView,
     MCAPWriter,
     MessageSchema,
     Parameter,
@@ -44,8 +44,44 @@ class ServerListener(Protocol):
     A mechanism to register callbacks for handling client message events.
     """
 
+    def on_subscribe(self, client: Client, channel: ChannelView) -> None:
+        """
+        Called by the server when a client subscribes to a channel.
+
+        :param client: The client (id) that sent the message.
+        :param channel: The channel (id, topic) that the message was sent on.
+        """
+        return None
+
+    def on_unsubscribe(self, client: Client, channel: ChannelView) -> None:
+        """
+        Called by the server when a client unsubscribes from a channel.
+
+        :param client: The client (id) that sent the message.
+        :param channel: The channel (id, topic) that the message was sent on.
+        """
+        return None
+
+    def on_client_advertise(self, client: Client, channel: ChannelView) -> None:
+        """
+        Called by the server when a client advertises a channel.
+
+        :param client: The client (id) that sent the message.
+        :param channel: The channel (id, topic) that the message was sent on.
+        """
+        return None
+
+    def on_client_unadvertise(self, client: Client, channel: ChannelView) -> None:
+        """
+        Called by the server when a client unadvertises a channel.
+
+        :param client: The client (id) that sent the message.
+        :param channel: The channel (id, topic) that the message was sent on.
+        """
+        return None
+
     def on_message_data(
-        self, client: Client, channel: ClientChannelView, data: bytes
+        self, client: Client, channel: ChannelView, data: bytes
     ) -> None:
         """
         Called by the server when a message is received from a client.
