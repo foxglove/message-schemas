@@ -15,7 +15,7 @@ use std::sync::Arc;
 use websocket_server::{
     start_server, PyCapability, PyChannelView, PyClient, PyMessageSchema, PyParameter,
     PyParameterType, PyParameterValue, PyRequest, PySchema, PyService, PyServiceSchema,
-    PyWebSocketServer,
+    PyStatusLevel, PyWebSocketServer,
 };
 
 mod errors;
