@@ -45,18 +45,46 @@ plot_schema = {
 
 
 class ExampleListener(foxglove.ServerListener):
-    """
-    This listener demonstrates receiving messages from the client.
-    You can send messages from Foxglove app in the publish panel:
-    https://docs.foxglove.dev/docs/visualization/panels/publish
-    """
+    def __init__(self) -> None:
+        self.subscribers: set[int] = set()
+
+    def has_subscribers(self) -> bool:
+        return len(self.subscribers) > 0
+
+    def on_subscribe(
+        self,
+        client: foxglove.Client,
+        channel: foxglove.ChannelView,
+    ) -> None:
+        """
+        Called by the server when a client subscribes to a channel.
+        We'll use this and on_unsubscribe to simply track if we have any subscribers at all.
+        """
+        logging.info(f"Client {client} subscribed to channel {channel.topic}")
+        self.subscribers.add(client.id)
+
+    def on_unsubscribe(
+        self,
+        client: foxglove.Client,
+        channel: foxglove.ChannelView,
+    ) -> None:
+        """
+        Called by the server when a client unsubscribes from a channel.
+        """
+        logging.info(f"Client {client} unsubscribed from channel {channel.topic}")
+        self.subscribers.remove(client.id)
 
     def on_message_data(
         self,
         client: foxglove.Client,
-        channel: foxglove.ClientChannelView,
+        channel: foxglove.ChannelView,
         data: bytes,
     ) -> None:
+        """
+        This handler demonstrates receiving messages from the client.
+        You can send messages from Foxglove app in the publish panel:
+        https://docs.foxglove.dev/docs/visualization/panels/publish
+        """
         logging.info(f"Message from client {client.id} on channel {channel.topic}")
         logging.info(f"Data: {data!r}")
 
@@ -64,8 +92,10 @@ class ExampleListener(foxglove.ServerListener):
 def main() -> None:
     foxglove.verbose_on()
 
+    listener = ExampleListener()
+
     server = foxglove.start_server(
-        server_listener=ExampleListener(),
+        server_listener=listener,
         capabilities=[Capability.ClientPublish],
         supported_encodings=["json"],
     )
@@ -92,6 +122,9 @@ def main() -> None:
     try:
         counter = 0
         while True:
+            if not listener.has_subscribers():
+                continue
+
             counter += 1
             now = time.time()
             y = np.sin(now)
