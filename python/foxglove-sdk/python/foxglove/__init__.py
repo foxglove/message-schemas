@@ -166,8 +166,10 @@ def start_server(
 def verbose_on(level: Union[int, str] = "INFO") -> None:
     """
     Enable SDK logging.
+
+    This function will call logging.basicConfig() for convenience in scripts, but in general you
+    should configure logging yourself: https://docs.python.org/3/library/logging.html
     """
-    # For convenience in quick scripts, set basic config if the user hasn't already.
     # This will raise a ValueError for invalid levels.
     logging.basicConfig(level=level, format="%(asctime)s [%(levelname)s] %(message)s")
 
