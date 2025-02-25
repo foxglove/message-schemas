@@ -29,7 +29,6 @@ requires-poetry = ">=2.0"
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.13.0"
 maturin = "^1.7.4"
-numpy = "^2.0"
 black = "^24.2.0"
 flake8 = "^7.0.0"
 sphinx = "^7.0.0"
