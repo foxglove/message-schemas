@@ -64,6 +64,8 @@ class ServerListener(Protocol):
     ) -> List["Parameter"]:
         """
         Called by the server when a client requests parameters.
+
+        You must advertise the `Parameters` capability.
         """
         return []
 
@@ -77,8 +79,33 @@ class ServerListener(Protocol):
         Called by the server when a client sets parameters.
         Note that only `parameters` which have changed are included in the callback, but the return
         value must include all parameters.
+
+        You must advertise the `Parameters` capability.
         """
         return parameters
+
+    def on_parameters_subscribe(
+        self,
+        param_names: List[str],
+    ) -> None:
+        """
+        Called by the server when a client subscribes to one or more parameters for the first time.
+
+        You must advertise the `Parameters` capability.
+        """
+        return None
+
+    def on_parameters_unsubscribe(
+        self,
+        param_names: List[str],
+    ) -> None:
+        """
+        Called by the server when the last client subscription to one or more parameters has been
+        removed.
+
+        You must advertise the `Parameters` capability.
+        """
+        return None
 
 
 ServiceHandler = Callable[["Client", "Request"], bytes]

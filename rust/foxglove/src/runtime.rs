@@ -1,6 +1,6 @@
 //! Tokio runtime.
 
-use std::sync::LazyLock;
+use std::sync::OnceLock;
 
 use parking_lot::Mutex;
 use tokio::runtime::Handle;
@@ -28,7 +28,7 @@ impl Runtime {
     }
 }
 
-static RUNTIME: LazyLock<Runtime> = LazyLock::new(Runtime::new);
+static RUNTIME: OnceLock<Runtime> = OnceLock::new();
 
 /// Returns the current runtime handle.
 ///
@@ -37,7 +37,7 @@ pub(crate) fn get_runtime_handle() -> Handle {
     if let Ok(handle) = Handle::try_current() {
         return handle;
     }
-    RUNTIME.handle.clone()
+    RUNTIME.get_or_init(Runtime::new).handle.clone()
 }
 
 /// Shuts down the tokio runtime, ensuring that there are no remaining async tasks.
@@ -55,5 +55,7 @@ pub(crate) fn get_runtime_handle() -> Handle {
 /// Once the runtime is shut down, it will not be restarted or replaced.
 #[doc(hidden)]
 pub fn shutdown_runtime() {
-    RUNTIME.shutdown()
+    if let Some(rt) = RUNTIME.get() {
+        rt.shutdown()
+    }
 }

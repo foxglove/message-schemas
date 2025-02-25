@@ -17,6 +17,8 @@ class ParameterStore(foxglove.ServerListener):
     def __init__(self, parameters: list[Parameter]) -> None:
         # In this example our parameters are unique by name
         self.parameters = {param.name: param for param in parameters}
+        # We can keep track of any parameters that are subscribed to
+        self.subscribed_param_names: set[str] = set()
 
     # Foxglove server callback
     def on_get_parameters(
@@ -47,6 +49,18 @@ class ParameterStore(foxglove.ServerListener):
                 self.parameters[changed_param.name] = changed_param
         return parameters
 
+    def on_parameters_subscribe(self, param_names: foxglove.List[str]) -> None:
+        # The SDK takes care of notifying the client of the current parameters;
+        # this is informational only.
+        logging.debug(f"New subscriptions for: {param_names}")
+        self.subscribed_param_names.update(param_names)
+
+    def on_parameters_unsubscribe(self, param_names: foxglove.List[str]) -> None:
+        # The SDK takes care of notifying the client of the current parameters;
+        # this is informational only.
+        logging.debug(f"Remove subscriptions for: {param_names}")
+        self.subscribed_param_names.difference_update(param_names)
+
 
 def main() -> None:
     foxglove.verbose_on()
@@ -73,7 +87,10 @@ def main() -> None:
 
     websocket_server = foxglove.start_server(
         server_listener=store,
-        capabilities=[Capability.Parameters],
+        capabilities=[
+            # 'Parameters' is required for get/set callbacks
+            Capability.Parameters,
+        ],
     )
 
     try:

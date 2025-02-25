@@ -149,6 +149,36 @@ impl ServerListener for PyServerListener {
             }
         }
     }
+
+    fn on_parameters_subscribe(&self, param_names: Vec<String>) {
+        let result: PyResult<()> = Python::with_gil(|py| {
+            let args = (param_names,);
+            self.listener
+                .bind(py)
+                .call_method("on_parameters_subscribe", args, None)?;
+
+            Ok(())
+        });
+
+        if let Err(err) = result {
+            tracing::error!("Callback failed: {}", err.to_string());
+        }
+    }
+
+    fn on_parameters_unsubscribe(&self, param_names: Vec<String>) {
+        let result: PyResult<()> = Python::with_gil(|py| {
+            let args = (param_names,);
+            self.listener
+                .bind(py)
+                .call_method("on_parameters_unsubscribe", args, None)?;
+
+            Ok(())
+        });
+
+        if let Err(err) = result {
+            tracing::error!("Callback failed: {}", err.to_string());
+        }
+    }
 }
 
 /// A handler for websocket services which calls out to user-defined functions
