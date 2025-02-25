@@ -138,16 +138,13 @@ pub struct RemoveStatus {
 }
 
 /// A capability that the websocket server advertises to its clients.
-#[derive(Debug, Serialize, Eq, PartialEq, Hash)]
+#[derive(Debug, Serialize, Eq, PartialEq, Hash, Clone)]
 #[serde(rename_all = "camelCase")]
 pub enum Capability {
     /// Allow clients to advertise channels to send data messages to the server.
     ClientPublish,
-    /// Allow clients to get & set parameters.
+    /// Allow clients to get & set parameters, and subscribe to updates.
     Parameters,
-    /// Allow clients to subscribe and unsubscribe from parameter updates
-    ParametersSubscribe,
-    ///
     /// Inform clients about the latest server time.
     ///
     /// This allows accelerated, slowed, or stepped control over the progress of time. If the
@@ -159,6 +156,16 @@ pub enum Capability {
     Services,
 }
 
+/// ws-protocol includes a "parametersSubscribe" capability in addition to "parameters".
+/// Because the SDK handles subscription management internally, we only expose the latter publicly.
+#[derive(Debug, Serialize, Eq, PartialEq, Hash)]
+#[serde(rename_all = "camelCase")]
+enum ProtocolCapability {
+    ParametersSubscribe,
+    #[serde(untagged)]
+    Capability(Capability),
+}
+
 // https://github.com/foxglove/ws-protocol/blob/main/docs/spec.md#server-info
 pub fn server_info(
     session_id: &str,
@@ -166,10 +173,19 @@ pub fn server_info(
     capabilities: &HashSet<Capability>,
     supported_encodings: &HashSet<String>,
 ) -> String {
+    let mut caps: Vec<ProtocolCapability> = capabilities
+        .iter()
+        .map(|c| ProtocolCapability::Capability(c.clone()))
+        .collect();
+
+    if capabilities.contains(&Capability::Parameters) {
+        caps.push(ProtocolCapability::ParametersSubscribe);
+    }
+
     json!({
         "op": "serverInfo",
         "name": name,
-        "capabilities": capabilities,
+        "capabilities": caps,
         "supportedEncodings": supported_encodings,
         "metadata": {},
         "sessionId": session_id
@@ -378,6 +394,21 @@ mod tests {
             "metadata": {},
         });
         assert_eq!(with_publish, expected.to_string());
+    }
+
+    #[test]
+    fn test_parameters_implies_parameters_subscribe() {
+        let capabilities = HashSet::from([Capability::Parameters]);
+        let info = server_info("id:123", "name:test", &capabilities, &HashSet::new());
+        let expected = json!({
+            "op": "serverInfo",
+            "name": "name:test",
+            "sessionId": "id:123",
+            "capabilities": ["parameters", "parametersSubscribe"],
+            "supportedEncodings": [],
+            "metadata": {},
+        });
+        assert_eq!(info, expected.to_string());
     }
 
     #[test]

@@ -90,8 +90,6 @@ def main() -> None:
         capabilities=[
             # 'Parameters' is required for get/set callbacks
             Capability.Parameters,
-            # 'ParametersSubscribe' is required to receive subscribe & unsubscribe callbacks
-            Capability.ParametersSubscribe,
         ],
     )
 

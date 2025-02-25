@@ -218,9 +218,11 @@ pub trait ServerListener: Send + Sync {
     ) -> Vec<Parameter> {
         parameters
     }
-    /// Callback invoked when a client subscribes to parameters. Requires [`Capability::ParametersSubscribe`].
+    /// Callback invoked when a client subscribes to the named parameters for the first time.
+    /// Requires [`Capability::Parameters`].
     fn on_parameters_subscribe(&self, _param_names: Vec<String>) {}
-    /// Callback invoked when a client unsubscribes from parameters. Requires [`Capability::ParametersSubscribe`].
+    /// Callback invoked when the last client unsubscribes from the named parameters.
+    /// Requires [`Capability::Parameters`].
     fn on_parameters_unsubscribe(&self, _param_names: Vec<String>) {}
 }
 
@@ -338,10 +340,7 @@ impl ConnectedClient {
     fn on_disconnect(&self, server: &Arc<Server>) {
         // If we track paramter subscriptions, unsubscribe this clients subscriptions
         // and notify the handler, if necessary
-        if !server
-            .capabilities
-            .contains(&Capability::ParametersSubscribe)
-            || self.server_listener.is_none()
+        if !server.capabilities.contains(&Capability::Parameters) || self.server_listener.is_none()
         {
             return;
         }
@@ -641,10 +640,7 @@ impl ConnectedClient {
     }
 
     fn on_parameters_subscribe(&self, server: Arc<Server>, param_names: Vec<String>) {
-        if !server
-            .capabilities
-            .contains(&Capability::ParametersSubscribe)
-        {
+        if !server.capabilities.contains(&Capability::Parameters) {
             self.send_error("Server does not support parametersSubscribe capability".to_string());
             return;
         }
@@ -690,10 +686,7 @@ impl ConnectedClient {
     }
 
     fn on_parameters_unsubscribe(&self, server: Arc<Server>, mut param_names: Vec<String>) {
-        if !server
-            .capabilities
-            .contains(&Capability::ParametersSubscribe)
-        {
+        if !server.capabilities.contains(&Capability::Parameters) {
             self.send_error("Server does not support parametersSubscribe capability".to_string());
             return;
         }

@@ -84,9 +84,9 @@ class ServerListener(Protocol):
         param_names: List[str],
     ) -> None:
         """
-        Called by the server when a client subscribes to a set of parameters.
+        Called by the server when a client subscribes to one or more parameters for the first time.
 
-        You must advertise the `ParametersSubscribe` capability.
+        You must advertise the `Parameters` capability.
         """
         return None
 
@@ -95,9 +95,10 @@ class ServerListener(Protocol):
         param_names: List[str],
     ) -> None:
         """
-        Called by the server when a client subscribes to a set of parameters.
+        Called by the server when the last client subscription to one or more parameters has been
+        removed.
 
-        You must advertise the `ParametersSubscribe` capability.
+        You must advertise the `Parameters` capability.
         """
         return None
 
