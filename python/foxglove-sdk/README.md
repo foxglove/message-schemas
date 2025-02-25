@@ -17,18 +17,14 @@ pipx install poetry
 poetry install
 ```
 
-Examples are available in `python/examples`. To run the websocket example:
-
-```sh
-poetry run python python/examples/live_visualization.py
-```
+Examples are available in [foxglove-sdk-examples](https://github.com/foxglove/foxglove-sdk/tree/main/python/foxglove-sdk-examples).
 
 ## Overview
 
 To record messages, you need at least one sink and at least one channel.
 
 A "sink" is a destination for logged messages — either an MCAP file or a live visualization server.
-Use `record_file` to register a new MCAP sink. Use `start_server` to create a new live visualization
+Use `open_mcap` to register a new MCAP sink. Use `start_server` to create a new live visualization
 server.
 
 A "channel" gives a way to log related messages which have the same schema. Each channel is

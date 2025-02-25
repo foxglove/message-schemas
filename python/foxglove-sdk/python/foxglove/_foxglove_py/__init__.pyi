@@ -1,22 +1,37 @@
 from enum import Enum
-from typing import Any, List, Optional, Protocol, Tuple
+from pathlib import Path
+from typing import Any, Callable, List, Optional, Tuple, Union
 
 class MCAPWriter:
     """
-    A writer for logging messages to an MCAP file. Obtain an instance by calling `record_file`, or
-    the context-managed `new_mcap_file`.
+    A writer for logging messages to an MCAP file.
 
-    If you're using `record_file`, you must maintain a reference to the returned writer until you
-    are done logging. The writer will be closed automatically when it is garbage collected, but you
-    may also `close()` it explicitly.
+    Obtain an instance by calling :py:func:`open_mcap`.
+
+    This class may be used as a context manager, in which case the writer will
+    be closed when you exit the context.
+
+    If the writer is not closed by the time it is garbage collected, it will be
+    closed automatically, and any errors will be logged.
     """
 
     def __new__(cls) -> "MCAPWriter": ...
+    def __enter__(self) -> "MCAPWriter": ...
+    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None: ...
     def close(self) -> None:
         """
         Close the writer explicitly.
+
+        You may call this to explicitly close the writer. Note that the writer
+        will be automatically closed whne it is garbage-collected, or when
+        exiting the context manager.
         """
         ...
+
+class StatusLevel(Enum):
+    Info = ...
+    Warning = ...
+    Error = ...
 
 class WebSocketServer:
     """
@@ -27,6 +42,11 @@ class WebSocketServer:
     def stop(self) -> None: ...
     def clear_session(self, session_id: Optional[str] = None) -> None: ...
     def broadcast_time(self, timestamp_nanos: int) -> None: ...
+    def publish_parameter_values(self, parameters: List["Parameter"]) -> None: ...
+    def publish_status(
+        self, message: str, level: "StatusLevel", id: Optional[str] = None
+    ) -> None: ...
+    def remove_status(self, ids: list[str]) -> None: ...
 
 class BaseChannel:
     """
@@ -50,51 +70,162 @@ class BaseChannel:
         sequence: Optional[int] = None,
     ) -> None: ...
 
-class PartialMetadata:
-    """
-    Structured metadata for use with logging. All fields are optional.
-    """
-
-    def __new__(
-        cls,
-        sequence: Optional[int] = None,
-        log_time: Optional[int] = None,
-        publish_time: Optional[int] = None,
-    ) -> "PartialMetadata":
-        """
-        :param sequence: The sequence number is unique per channel and allows for ordering of
-            messages as well as detecting missing messages. If omitted, a monotonically increasing
-            sequence number unique to the channel is used.
-        :param log_time: The log time is the time, as nanoseconds from the unix epoch, that the
-            message was recorded. Usually this is the time log() is called. If omitted, the
-            current time is used.
-        :param publish_time: The publish_time is the time at which the message was published. e.g.
-            the timestamp at which the sensor reading was taken. If omitted, log time is used.
-        """
-        ...
-
 class Capability(Enum):
     """
     A capability that the websocket server advertises to its clients.
     """
 
-    Time = ...
     ClientPublish = ...
+    Parameters = ...
+    Services = ...
+    Time = ...
 
 class Client:
     """
     A client that is connected to a running websocket server.
     """
 
-    id = ...
+    id: int = ...
 
-class ClientChannelView:
+class ChannelView:
     """
-    Information about a client channel.
+    Information about a channel.
     """
 
-    id = ...
-    topic = ...
+    id: int = ...
+    topic: str = ...
+
+class Parameter:
+    """
+    A parameter.
+    """
+
+    name: str
+    type: Optional["ParameterType"]
+    value: Optional["AnyParameterValue"]
+
+    def __init__(
+        self,
+        name: str,
+        *,
+        type: Optional["ParameterType"] = None,
+        value: Optional["AnyParameterValue"] = None,
+    ) -> None: ...
+
+class ParameterType(Enum):
+    """
+    The type of a parameter.
+    """
+
+    ByteArray = ...
+    Float64 = ...
+    Float64Array = ...
+
+class ParameterValue:
+    """
+    The value of a parameter.
+    """
+
+    class Bool:
+        def __new__(cls, value: bool) -> "ParameterValue.Bool": ...
+
+    class Number:
+        def __new__(cls, value: float) -> "ParameterValue.Number": ...
+
+    class Bytes:
+        def __new__(cls, value: bytes) -> "ParameterValue.Bytes": ...
+
+    class Array:
+        def __new__(
+            cls, value: List["AnyParameterValue"]
+        ) -> "ParameterValue.Array": ...
+
+    class Dict:
+        def __new__(
+            cls, value: dict[str, "AnyParameterValue"]
+        ) -> "ParameterValue.Dict": ...
+
+AnyParameterValue = Union[
+    ParameterValue.Bool,
+    ParameterValue.Number,
+    ParameterValue.Bytes,
+    ParameterValue.Array,
+    ParameterValue.Dict,
+]
+
+class Request:
+    """
+    A websocket service request.
+    """
+
+    service_name: str
+    call_id: int
+    encoding: str
+    payload: bytes
+
+ServiceHandler = Callable[["Client", "Request"], bytes]
+
+class Service:
+    """
+    A websocket service.
+    """
+
+    name: str
+    schema: "ServiceSchema"
+    handler: "ServiceHandler"
+
+    def __new__(
+        cls, *, name: str, schema: "ServiceSchema", handler: "ServiceHandler"
+    ) -> "Service": ...
+
+class ServiceSchema:
+    """
+    A websocket service schema.
+    """
+
+    name: str
+    request: Optional["MessageSchema"]
+    response: Optional["MessageSchema"]
+
+    def __new__(
+        cls,
+        *,
+        name: str,
+        request: Optional["MessageSchema"] = None,
+        response: Optional["MessageSchema"] = None,
+    ) -> "ServiceSchema": ...
+
+class MessageSchema:
+    """
+    A service request or response schema.
+    """
+
+    encoding: str
+    schema: "Schema"
+
+    def __new__(
+        cls,
+        *,
+        encoding: str,
+        schema: "Schema",
+    ) -> "MessageSchema": ...
+
+class Schema:
+    """
+    A schema for a message or service call.
+    """
+
+    name: str
+    encoding: str
+    data: bytes
+
+    def __new__(
+        cls,
+        *,
+        name: str,
+        encoding: str,
+        data: bytes,
+    ) -> "Schema": ...
 
 def start_server(
     name: Optional[str] = None,
@@ -103,6 +234,7 @@ def start_server(
     capabilities: Optional[List[Capability]] = None,
     server_listener: Any = None,
     supported_encodings: Optional[List[str]] = None,
+    services: Optional[List["Service"]] = None,
 ) -> WebSocketServer:
     """
     Start a websocket server for live visualization.
@@ -127,9 +259,13 @@ def shutdown() -> None:
     """
     ...
 
-def record_file(path: str) -> MCAPWriter:
+def open_mcap(path: str | Path, allow_overwrite: bool = False) -> MCAPWriter:
     """
-    Create a new MCAP file at ``path`` for logging.
+    Creates a new MCAP file for recording.
+
+    :param path: The path to the MCAP file. This file will be created and must not already exist.
+    :param allow_overwrite: Set this flag in order to overwrite an existing file at this path.
+    :rtype: :py:class:`MCAPWriter`
     """
     ...
 
