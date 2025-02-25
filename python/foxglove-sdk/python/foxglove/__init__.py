@@ -7,8 +7,7 @@ schemas.
 
 import atexit
 import logging
-from contextlib import contextmanager
-from typing import Callable, Iterator, List, Optional, Protocol, Union
+from typing import Callable, List, Optional, Protocol, Union
 
 from ._foxglove_py import (
     Capability,
@@ -16,6 +15,9 @@ from ._foxglove_py import (
     ClientChannelView,
     MCAPWriter,
     MessageSchema,
+    Parameter,
+    ParameterType,
+    ParameterValue,
     Request,
     Schema,
     Service,
@@ -24,7 +26,7 @@ from ._foxglove_py import (
     WebSocketServer,
     disable_logging,
     enable_logging,
-    record_file,
+    open_mcap,
     shutdown,
 )
 from ._foxglove_py import start_server as _start_server
@@ -52,7 +54,31 @@ class ServerListener(Protocol):
         :param channel: The channel (id, topic) that the message was sent on.
         :param data: The message data.
         """
-        pass
+        return None
+
+    def on_get_parameters(
+        self,
+        client: Client,
+        param_names: List[str],
+        request_id: Optional[str] = None,
+    ) -> List["Parameter"]:
+        """
+        Called by the server when a client requests parameters.
+        """
+        return []
+
+    def on_set_parameters(
+        self,
+        client: Client,
+        parameters: List["Parameter"],
+        request_id: Optional[str] = None,
+    ) -> List["Parameter"]:
+        """
+        Called by the server when a client sets parameters.
+        Note that only `parameters` which have changed are included in the callback, but the return
+        value must include all parameters.
+        """
+        return parameters
 
 
 ServiceHandler = Callable[["Client", "Request"], bytes]
@@ -122,26 +148,15 @@ def verbose_off() -> None:
     disable_logging()
 
 
-@contextmanager
-def new_mcap_file(fname: str) -> Iterator[None]:
-    """
-    Create an MCAP file at the given path for recording.
-
-    This is the context-managed equivalent of :py:func:`record_file`.
-    """
-    writer = record_file(fname)
-    try:
-        yield
-    finally:
-        writer.close()
-
-
 __all__ = [
     "Capability",
     "Channel",
     "Client",
     "MCAPWriter",
     "MessageSchema",
+    "Parameter",
+    "ParameterType",
+    "ParameterValue",
     "Request",
     "Schema",
     "SchemaDefinition",
@@ -152,8 +167,7 @@ __all__ = [
     "StatusLevel",
     "WebSocketServer",
     "log",
-    "new_mcap_file",
-    "record_file",
+    "open_mcap",
     "start_server",
     "verbose_off",
     "verbose_on",

@@ -35,6 +35,10 @@ class SchemaDefinition:
 
 
 class Channel:
+    """
+    A channel that can be used to log binary messages or JSON messages.
+    """
+
     __slots__ = ["base", "message_encoding"]
     base: BaseChannel
     message_encoding: str
