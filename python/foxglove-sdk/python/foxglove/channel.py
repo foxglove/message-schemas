@@ -1,7 +1,7 @@
 import json
-from ._foxglove_py import BaseChannel, channels
-
 from typing import Any, Dict, Optional, Union
+
+from ._foxglove_py import BaseChannel, channels
 
 JsonSchema = Dict[str, Any]
 JsonMessage = Dict[str, Any]
@@ -35,6 +35,10 @@ class SchemaDefinition:
 
 
 class Channel:
+    """
+    A channel that can be used to log binary messages or JSON messages.
+    """
+
     __slots__ = ["base", "message_encoding"]
     base: BaseChannel
     message_encoding: str

@@ -6,30 +6,26 @@ schemas.
 """
 
 import atexit
-from contextlib import contextmanager
-from typing import Iterator, List, Optional, Protocol, Union
+import logging
+from typing import List, Optional, Protocol, Union
+
 from ._foxglove_py import (
-    ClientChannelView,
+    Capability,
     Client,
+    ClientChannelView,
     MCAPWriter,
     Parameter,
     ParameterType,
     ParameterValue,
     StatusLevel,
     WebSocketServer,
-    record_file,
-    enable_logging,
     disable_logging,
+    enable_logging,
+    open_mcap,
     shutdown,
-    Capability,
 )
-
 from ._foxglove_py import start_server as _start_server
-
-
-from .channel import Channel, log, SchemaDefinition
-
-import logging
+from .channel import Channel, SchemaDefinition, log
 
 logging.basicConfig(
     level=logging.DEBUG, format="%(asctime)s [%(levelname)s] %(message)s"
@@ -141,20 +137,6 @@ def verbose_off() -> None:
     disable_logging()
 
 
-@contextmanager
-def new_mcap_file(fname: str) -> Iterator[None]:
-    """
-    Create an MCAP file at the given path for recording.
-
-    This is the context-managed equivalent of :py:func:`record_file`.
-    """
-    writer = record_file(fname)
-    try:
-        yield
-    finally:
-        writer.close()
-
-
 __all__ = [
     "Capability",
     "Channel",
@@ -167,8 +149,7 @@ __all__ = [
     "StatusLevel",
     "WebSocketServer",
     "log",
-    "new_mcap_file",
-    "record_file",
+    "open_mcap",
     "start_server",
     "verbose_off",
     "verbose_on",

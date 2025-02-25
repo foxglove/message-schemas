@@ -1,7 +1,7 @@
 import time
 import unittest
 
-from foxglove import start_server, StatusLevel
+from foxglove import StatusLevel, start_server
 
 
 class TestServer(unittest.TestCase):

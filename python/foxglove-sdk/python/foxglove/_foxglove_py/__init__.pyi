@@ -1,20 +1,30 @@
 from enum import Enum
+from pathlib import Path
 from typing import Any, List, Optional, Tuple, Union
 
 class MCAPWriter:
     """
-    A writer for logging messages to an MCAP file. Obtain an instance by calling `record_file`, or
-    the context-managed `new_mcap_file`.
+    A writer for logging messages to an MCAP file.
 
-    If you're using `record_file`, you must maintain a reference to the returned writer until you
-    are done logging. The writer will be closed automatically when it is garbage collected, but you
-    may also `close()` it explicitly.
+    Obtain an instance by calling :py:func:`open_mcap`.
+
+    This class may be used as a context manager, in which case the writer will
+    be closed when you exit the context.
+
+    If the writer is not closed by the time it is garbage collected, it will be
+    closed automatically, and any errors will be logged.
     """
 
     def __new__(cls) -> "MCAPWriter": ...
+    def __enter__(self) -> "MCAPWriter": ...
+    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None: ...
     def close(self) -> None:
         """
         Close the writer explicitly.
+
+        You may call this to explicitly close the writer. Note that the writer
+        will be automatically closed whne it is garbage-collected, or when
+        exiting the context manager.
         """
         ...
 
@@ -55,8 +65,8 @@ class BaseChannel:
     def log(
         self,
         msg: bytes,
-        log_time: Optional[int] = None,
         publish_time: Optional[int] = None,
+        log_time: Optional[int] = None,
         sequence: Optional[int] = None,
     ) -> None: ...
 
@@ -173,9 +183,13 @@ def shutdown() -> None:
     """
     ...
 
-def record_file(path: str) -> MCAPWriter:
+def open_mcap(path: str | Path, allow_overwrite: bool = False) -> MCAPWriter:
     """
-    Create a new MCAP file at ``path`` for logging.
+    Creates a new MCAP file for recording.
+
+    :param path: The path to the MCAP file. This file will be created and must not already exist.
+    :param allow_overwrite: Set this flag in order to overwrite an existing file at this path.
+    :rtype: :py:class:`MCAPWriter`
     """
     ...
 
