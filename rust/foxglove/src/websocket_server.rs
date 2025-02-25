@@ -1,11 +1,13 @@
 //! Websocket server
 
 use std::fmt::Debug;
+use std::future::Future;
 use std::sync::Arc;
 
 use crate::websocket::service::{Service, ServiceId};
 use crate::websocket::{
-    create_server, AssetHandler, Capability, Parameter, Server, ServerOptions, Status,
+    create_server, AssetHandler, AsyncAssetHandlerFn, Capability, Client, FetchAssetResult,
+    Parameter, Server, ServerOptions, Status, SyncAssetHandlerFn,
 };
 use crate::{get_runtime_handle, FoxgloveError, LogContext, LogSink};
 use tokio::runtime::Handle;
@@ -72,8 +74,27 @@ impl WebSocketServer {
     }
 
     /// Configure the handler for fetching assets.
-    pub fn fetch_asset_handler(mut self, handler: Box<dyn AssetHandler>) -> Self {
+    pub fn fetch_asset_handler(mut self, handler: Arc<dyn AssetHandler>) -> Self {
         self.options.fetch_asset_handler = Some(handler);
+        self
+    }
+
+    /// Configure a synchronous function as a fetch asset handler.
+    pub fn fetch_asset_handler_sync_fn(
+        mut self,
+        handler: impl Fn(Client, String) -> FetchAssetResult + Send + Sync + 'static,
+    ) -> Self {
+        self.options.fetch_asset_handler = Some(Arc::new(SyncAssetHandlerFn(handler)));
+        self
+    }
+
+    /// Configure an asynchronous function as a fetch asset handler.
+    pub fn fetch_asset_handler_async_fn<F, Fut>(mut self, handler: F) -> Self
+    where
+        F: Fn(Client, String) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = FetchAssetResult> + Send + 'static,
+    {
+        self.options.fetch_asset_handler = Some(Arc::new(AsyncAssetHandlerFn(handler)));
         self
     }
 

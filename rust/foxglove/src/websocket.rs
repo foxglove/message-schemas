@@ -33,7 +33,9 @@ use tokio_tungstenite::{
 use tokio_util::sync::CancellationToken;
 
 mod fetch_asset;
-pub use fetch_asset::{AssetHandler, AssetResponder, AsyncHandler, FetchAssetResult, SyncHandler};
+pub use fetch_asset::{
+    AssetHandler, AssetResponder, AsyncAssetHandlerFn, FetchAssetResult, SyncAssetHandlerFn,
+};
 mod protocol;
 pub mod service;
 #[cfg(test)]
@@ -149,7 +151,7 @@ pub(crate) struct ServerOptions {
     pub services: HashMap<String, Service>,
     pub supported_encodings: Option<HashSet<String>>,
     pub runtime: Option<Handle>,
-    pub fetch_asset_handler: Option<Box<dyn AssetHandler>>,
+    pub fetch_asset_handler: Option<Arc<dyn AssetHandler>>,
 }
 
 impl std::fmt::Debug for ServerOptions {
@@ -194,7 +196,7 @@ pub(crate) struct Server {
     /// Registered services.
     services: parking_lot::RwLock<HashMap<ServiceId, Arc<Service>>>,
     /// Handler for fetch asset requests
-    fetch_asset_handler: Option<Box<dyn AssetHandler>>,
+    fetch_asset_handler: Option<Arc<dyn AssetHandler>>,
 }
 
 /// Provides a mechanism for registering callbacks for handling client message events.
@@ -815,7 +817,7 @@ impl ConnectedClient {
             return;
         }
 
-        if let Some(handler) = server.fetch_asset_handler.as_ref() {
+        if let Some(handler) = server.fetch_asset_handler.clone() {
             let asset_responder = AssetResponder::new(Client::new(self), request_id);
             handler.fetch(server.runtime(), uri, asset_responder);
         } else {
