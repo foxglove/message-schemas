@@ -25,8 +25,7 @@ def logging_handler(
     request: Request,
 ) -> bytes:
     """
-    A handler for the service, adhering to the `ServiceHandler` type,
-    called with the following positional arguments:
+    A handler for the service, adhering to the `ServiceHandler` type.
 
     The handler should return a bytes object which will be sent back to the client.
     """

@@ -277,6 +277,10 @@ impl From<PyCapability> for foxglove::websocket::Capability {
 }
 
 /// A websocket service.
+///
+/// The handler must be a callback function which takes the :py:class:`Client` and
+/// :py:class:`Request` as arguments, and returns `bytes` as a response. If the handler raises an
+/// exception, the stringified exception message will be returned to the client as an error.
 #[pyclass(name = "Service", module = "foxglove", get_all, set_all)]
 #[derive(FromPyObject)]
 pub struct PyService {
