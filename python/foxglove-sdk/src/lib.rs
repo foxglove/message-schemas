@@ -10,9 +10,13 @@ use pyo3::prelude::*;
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::BufWriter;
+use std::path::PathBuf;
 use std::sync::Arc;
 use websocket_server::PyStatusLevel;
-use websocket_server::{start_server, PyCapability, PyChannelView, PyClient, PyWebSocketServer};
+use websocket_server::{
+    start_server, PyCapability, PyChannelView, PyClient, PyParameter, PyParameterType,
+    PyParameterValue, PyWebSocketServer,
+};
 
 mod errors;
 mod generated;
@@ -21,20 +25,20 @@ mod websocket_server;
 #[pyclass(module = "foxglove")]
 struct BaseChannel(Arc<Channel>);
 
-///  A writer for logging messages to an MCAP file.
+/// A writer for logging messages to an MCAP file.
 ///
-/// Obtain an instance by calling :py:func:`record_file`, or the context-managed
-/// :py:func:`new_mcap_file`.
+/// Obtain an instance by calling :py:func:`open_mcap`.
 ///
-/// If you're using :py:func:`record_file`, you must maintain a reference to the returned writer
-/// until you are done logging. The writer will be closed automatically when it is garbage
-/// collected, but you may also :py:func:`MCAPWriter.close` it explicitly.
+/// This class may be used as a context manager, in which case the writer will
+/// be closed when you exit the context.
+///
+/// If the writer is not closed by the time it is garbage collected, it will be
+/// closed automatically, and any errors will be logged.
 #[pyclass(name = "MCAPWriter", module = "foxglove")]
 struct PyMcapWriter(Option<McapWriterHandle<BufWriter<File>>>);
 
 impl Drop for PyMcapWriter {
     fn drop(&mut self) {
-        log::info!("MCAP writer dropped");
         if let Err(e) = self.close() {
             log::error!("Failed to close MCAP writer: {e}");
         }
@@ -43,11 +47,23 @@ impl Drop for PyMcapWriter {
 
 #[pymethods]
 impl PyMcapWriter {
+    fn __enter__(slf: PyRef<Self>) -> PyRef<Self> {
+        slf
+    }
+
+    fn __exit__(
+        &mut self,
+        _exc_type: Py<PyAny>,
+        _exc_value: Py<PyAny>,
+        _traceback: Py<PyAny>,
+    ) -> PyResult<()> {
+        self.close()
+    }
+
     /// Close the MCAP writer.
     ///
     /// You may call this to explicitly close the writer. Note that the writer will be automatically
-    /// closed for you when it is garbage collected, or when using the context-managed
-    /// :py:func:`new_mcap_file`.
+    /// closed for you when it is garbage collected, or when exiting the context manager.
     fn close(&mut self) -> PyResult<()> {
         if let Some(writer) = self.0.take() {
             writer.close().map_err(PyFoxgloveError::from)?;
@@ -125,12 +141,19 @@ impl BaseChannel {
 /// Open a new mcap file for recording.
 ///
 /// :param path: The path to the MCAP file. This file will be created and must not already exist.
-/// :return: A new `MCAPWriter` object.
+/// :param allow_overwrite: Set this flag in order to overwrite an existing file at this path.
+/// :rtype: :py:class:`MCAPWriter`
 #[pyfunction]
-#[pyo3(signature = (path))]
-fn record_file(path: &str) -> PyResult<PyMcapWriter> {
+#[pyo3(signature = (path, *, allow_overwrite = false))]
+fn open_mcap(path: PathBuf, allow_overwrite: bool) -> PyResult<PyMcapWriter> {
+    let file = if allow_overwrite {
+        File::create(path)?
+    } else {
+        File::create_new(path)?
+    };
+    let writer = BufWriter::new(file);
     let handle = McapWriter::new()
-        .create_new_buffered_file(path)
+        .create(writer)
         .map_err(PyFoxgloveError::from)?;
     Ok(PyMcapWriter(Some(handle)))
 }
@@ -177,7 +200,7 @@ fn _foxglove_py(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(enable_logging, m)?)?;
     m.add_function(wrap_pyfunction!(disable_logging, m)?)?;
     m.add_function(wrap_pyfunction!(shutdown, m)?)?;
-    m.add_function(wrap_pyfunction!(record_file, m)?)?;
+    m.add_function(wrap_pyfunction!(open_mcap, m)?)?;
     m.add_function(wrap_pyfunction!(start_server, m)?)?;
     m.add_function(wrap_pyfunction!(get_channel_for_topic, m)?)?;
     m.add_class::<BaseChannel>()?;
@@ -188,6 +211,9 @@ fn _foxglove_py(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyCapability>()?;
     m.add_class::<PyClient>()?;
     m.add_class::<PyChannelView>()?;
+    m.add_class::<PyParameter>()?;
+    m.add_class::<PyParameterType>()?;
+    m.add_class::<PyParameterValue>()?;
     m.add_class::<PyStatusLevel>()?;
 
     // Register the schema & channel modules

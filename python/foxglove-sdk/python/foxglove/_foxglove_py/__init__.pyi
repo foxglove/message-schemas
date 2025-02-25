@@ -1,20 +1,30 @@
 from enum import Enum
-from typing import Any, List, Optional, Tuple
+from pathlib import Path
+from typing import Any, List, Optional, Tuple, Union
 
 class MCAPWriter:
     """
-    A writer for logging messages to an MCAP file. Obtain an instance by calling `record_file`, or
-    the context-managed `new_mcap_file`.
+    A writer for logging messages to an MCAP file.
 
-    If you're using `record_file`, you must maintain a reference to the returned writer until you
-    are done logging. The writer will be closed automatically when it is garbage collected, but you
-    may also `close()` it explicitly.
+    Obtain an instance by calling :py:func:`open_mcap`.
+
+    This class may be used as a context manager, in which case the writer will
+    be closed when you exit the context.
+
+    If the writer is not closed by the time it is garbage collected, it will be
+    closed automatically, and any errors will be logged.
     """
 
     def __new__(cls) -> "MCAPWriter": ...
+    def __enter__(self) -> "MCAPWriter": ...
+    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None: ...
     def close(self) -> None:
         """
         Close the writer explicitly.
+
+        You may call this to explicitly close the writer. Note that the writer
+        will be automatically closed whne it is garbage-collected, or when
+        exiting the context manager.
         """
         ...
 
@@ -32,6 +42,7 @@ class WebSocketServer:
     def stop(self) -> None: ...
     def clear_session(self, session_id: Optional[str] = None) -> None: ...
     def broadcast_time(self, timestamp_nanos: int) -> None: ...
+    def publish_parameter_values(self, parameters: List["Parameter"]) -> None: ...
     def publish_status(
         self, message: str, level: "StatusLevel", id: Optional[str] = None
     ) -> None: ...
@@ -54,8 +65,8 @@ class BaseChannel:
     def log(
         self,
         msg: bytes,
-        log_time: Optional[int] = None,
         publish_time: Optional[int] = None,
+        log_time: Optional[int] = None,
         sequence: Optional[int] = None,
     ) -> None: ...
 
@@ -66,6 +77,7 @@ class Capability(Enum):
 
     Time = ...
     ClientPublish = ...
+    Parameters = ...
 
 class Client:
     """
@@ -81,6 +93,64 @@ class ChannelView:
 
     id: int = ...
     topic: str = ...
+
+class Parameter:
+    """
+    A parameter.
+    """
+
+    name: str
+    type: Optional["ParameterType"]
+    value: Optional["AnyParameterValue"]
+
+    def __init__(
+        self,
+        name: str,
+        *,
+        type: Optional["ParameterType"] = None,
+        value: Optional["AnyParameterValue"] = None,
+    ) -> None: ...
+
+class ParameterType(Enum):
+    """
+    The type of a parameter.
+    """
+
+    ByteArray = ...
+    Float64 = ...
+    Float64Array = ...
+
+class ParameterValue:
+    """
+    The value of a parameter.
+    """
+
+    class Bool:
+        def __new__(cls, value: bool) -> "ParameterValue.Bool": ...
+
+    class Number:
+        def __new__(cls, value: float) -> "ParameterValue.Number": ...
+
+    class Bytes:
+        def __new__(cls, value: bytes) -> "ParameterValue.Bytes": ...
+
+    class Array:
+        def __new__(
+            cls, value: List["AnyParameterValue"]
+        ) -> "ParameterValue.Array": ...
+
+    class Dict:
+        def __new__(
+            cls, value: dict[str, "AnyParameterValue"]
+        ) -> "ParameterValue.Dict": ...
+
+AnyParameterValue = Union[
+    ParameterValue.Bool,
+    ParameterValue.Number,
+    ParameterValue.Bytes,
+    ParameterValue.Array,
+    ParameterValue.Dict,
+]
 
 def start_server(
     name: Optional[str] = None,
@@ -113,9 +183,13 @@ def shutdown() -> None:
     """
     ...
 
-def record_file(path: str) -> MCAPWriter:
+def open_mcap(path: str | Path, allow_overwrite: bool = False) -> MCAPWriter:
     """
-    Create a new MCAP file at ``path`` for logging.
+    Creates a new MCAP file for recording.
+
+    :param path: The path to the MCAP file. This file will be created and must not already exist.
+    :param allow_overwrite: Set this flag in order to overwrite an existing file at this path.
+    :rtype: :py:class:`MCAPWriter`
     """
     ...
 

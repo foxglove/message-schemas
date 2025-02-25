@@ -7,19 +7,21 @@ schemas.
 
 import atexit
 import logging
-from contextlib import contextmanager
-from typing import Iterator, List, Optional, Protocol, Union
+from typing import List, Optional, Protocol, Union
 
 from ._foxglove_py import (
     Capability,
     Client,
     ChannelView,
     MCAPWriter,
+    Parameter,
+    ParameterType,
+    ParameterValue,
     StatusLevel,
     WebSocketServer,
     disable_logging,
     enable_logging,
-    record_file,
+    open_mcap,
     shutdown,
 )
 from ._foxglove_py import start_server as _start_server
@@ -85,6 +87,30 @@ class ServerListener(Protocol):
         """
         return None
 
+    def on_get_parameters(
+        self,
+        client: Client,
+        param_names: List[str],
+        request_id: Optional[str] = None,
+    ) -> List["Parameter"]:
+        """
+        Called by the server when a client requests parameters.
+        """
+        return []
+
+    def on_set_parameters(
+        self,
+        client: Client,
+        parameters: List["Parameter"],
+        request_id: Optional[str] = None,
+    ) -> List["Parameter"]:
+        """
+        Called by the server when a client sets parameters.
+        Note that only `parameters` which have changed are included in the callback, but the return
+        value must include all parameters.
+        """
+        return parameters
+
 
 def start_server(
     name: Optional[str] = None,
@@ -147,31 +173,19 @@ def verbose_off() -> None:
     disable_logging()
 
 
-@contextmanager
-def new_mcap_file(fname: str) -> Iterator[None]:
-    """
-    Create an MCAP file at the given path for recording.
-
-    This is the context-managed equivalent of :py:func:`record_file`.
-    """
-    writer = record_file(fname)
-    try:
-        yield
-    finally:
-        writer.close()
-
-
 __all__ = [
     "Capability",
     "Channel",
     "MCAPWriter",
+    "Parameter",
+    "ParameterType",
+    "ParameterValue",
     "SchemaDefinition",
     "ServerListener",
     "StatusLevel",
     "WebSocketServer",
     "log",
-    "new_mcap_file",
-    "record_file",
+    "open_mcap",
     "start_server",
     "verbose_off",
     "verbose_on",
