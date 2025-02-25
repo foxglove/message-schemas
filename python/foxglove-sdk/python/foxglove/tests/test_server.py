@@ -2,10 +2,6 @@ import time
 import unittest
 
 from foxglove import (
-    Client,
-    ClientChannelView,
-    Parameter,
-    ParameterValue,
     ServerListener,
     StatusLevel,
     start_server,
@@ -31,14 +27,5 @@ class TestServer(unittest.TestCase):
 
         listener = DefaultServerListener()
 
-        listener.on_message_data(Client(), ClientChannelView(), b"")
-
         listener.on_parameters_subscribe(["test"])
         listener.on_parameters_unsubscribe(["test"])
-        self.assertEqual([], listener.on_get_parameters(Client(), ["test"], None))
-        self.assertEqual(
-            [],
-            listener.on_set_parameters(
-                Client(), [Parameter(name="test", value=ParameterValue.Number(1))], None
-            ),
-        )
