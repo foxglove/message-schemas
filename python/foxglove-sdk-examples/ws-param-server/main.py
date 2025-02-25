@@ -6,13 +6,11 @@ https://docs.foxglove.dev/docs/visualization/panels/parameters
 """
 
 import logging
-from typing import Optional
-import foxglove
 import time
+from typing import Optional
 
-
-from foxglove import Capability
-from foxglove import ParameterType, ParameterValue, Parameter
+import foxglove
+from foxglove import Capability, Parameter, ParameterType, ParameterValue
 
 
 class ParameterStore(foxglove.ServerListener):
