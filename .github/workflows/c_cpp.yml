@@ -54,6 +54,8 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           target: ${{ matrix.target }}
+      - run: apt install aarch64-linux-gnu-gcc
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
 
       - name: Build C library for ${{ matrix.target }}
         run: cargo build --release
