@@ -35,6 +35,9 @@ struct foxglove_websocket_server *foxglove_server_start(const char *name,
  */
 void foxglove_server_destroy(struct foxglove_websocket_server *server);
 
+/**
+ * Stop and shut down a server.
+ */
 void foxglove_server_stop(struct foxglove_websocket_server *server);
 
 #ifdef __cplusplus
