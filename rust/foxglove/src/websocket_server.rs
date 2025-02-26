@@ -210,7 +210,7 @@ impl WebSocketServerHandle {
         self.0.clear_session(new_session_id);
     }
 
-    /// Publishes parameter values to all clients.
+    /// Publishes parameter values to all subscribed clients.
     pub fn publish_parameter_values(&self, parameters: Vec<Parameter>) {
         self.0.publish_parameter_values(parameters);
     }
@@ -287,7 +287,7 @@ impl WebSocketServerBlockingHandle {
         self.0.clear_session(new_session_id);
     }
 
-    /// Publishes parameter values to all clients.
+    /// Publishes parameter values to all subscribed clients.
     pub fn publish_parameter_values(&self, parameters: Vec<Parameter>) {
         self.0.publish_parameter_values(parameters)
     }

@@ -3,7 +3,7 @@ Examples
 
 Live visualization
 ------------------
-.. literalinclude:: ../examples/live_visualization.py
+.. literalinclude:: ../../../foxglove-sdk-examples/live_visualization/main.py
 
 
 Write to an MCAP file

@@ -795,10 +795,7 @@ async fn test_client_advertising() {
 #[tokio::test]
 async fn test_parameter_values() {
     let server = create_server(ServerOptions {
-        capabilities: Some(HashSet::from([
-            Capability::Parameters,
-            Capability::ParametersSubscribe,
-        ])),
+        capabilities: Some(HashSet::from([Capability::Parameters])),
         ..Default::default()
     });
     let addr = server
@@ -850,10 +847,7 @@ async fn test_parameter_unsubscribe_no_updates() {
     let recording_listener = Arc::new(RecordingServerListener::new());
 
     let server = create_server(ServerOptions {
-        capabilities: Some(HashSet::from([
-            Capability::Parameters,
-            Capability::ParametersSubscribe,
-        ])),
+        capabilities: Some(HashSet::from([Capability::Parameters])),
         listener: Some(recording_listener.clone()),
         ..Default::default()
     });
@@ -921,10 +915,7 @@ async fn test_set_parameters() {
     let recording_listener = Arc::new(RecordingServerListener::new());
 
     let server = create_server(ServerOptions {
-        capabilities: Some(HashSet::from([
-            Capability::Parameters,
-            Capability::ParametersSubscribe,
-        ])),
+        capabilities: Some(HashSet::from([Capability::Parameters])),
         listener: Some(recording_listener.clone()),
         ..Default::default()
     });
