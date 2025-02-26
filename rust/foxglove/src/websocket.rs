@@ -42,7 +42,7 @@ mod tests;
 #[cfg(all(test, feature = "unstable"))]
 mod unstable_tests;
 
-use service::{CallId, Service, ServiceId};
+use service::{CallId, Service, ServiceId, ServiceMap};
 
 /// A capability that a websocket server can support.
 #[derive(Debug, Serialize, Eq, PartialEq, Hash, Clone, Copy)]
@@ -196,7 +196,7 @@ pub(crate) struct Server {
     /// Token for cancelling all tasks
     cancellation_token: CancellationToken,
     /// Registered services.
-    services: parking_lot::RwLock<HashMap<ServiceId, Arc<Service>>>,
+    services: parking_lot::RwLock<ServiceMap>,
 }
 
 /// Provides a mechanism for registering callbacks for handling client message events.
@@ -808,10 +808,11 @@ impl ConnectedClient {
             service.response_encoding().unwrap_or(&req.encoding),
             guard,
         );
-        let request = service::Request::new(service.clone(), call_id, req.encoding, req.payload);
+        let request =
+            service::Request::new(service.clone(), self.id, call_id, req.encoding, req.payload);
 
         // Invoke the handler.
-        service.call(Client(self), request, responder);
+        service.call(request, responder);
     }
 
     /// Sends a service call failure message to the client with the provided message.
@@ -975,12 +976,7 @@ impl Server {
             connection_graph: parking_lot::Mutex::new(ConnectionGraph::new()),
             connection_graph_subscriber_count: parking_lot::Mutex::new(0),
             cancellation_token: CancellationToken::new(),
-            services: parking_lot::RwLock::new(
-                opts.services
-                    .into_values()
-                    .map(|s| (s.id(), Arc::new(s)))
-                    .collect(),
-            ),
+            services: parking_lot::RwLock::new(ServiceMap::from_iter(opts.services.into_values())),
         }
     }
 
@@ -1389,17 +1385,17 @@ impl Server {
         let msg = Message::text(protocol::server::advertise_services(&new_services));
 
         {
-            // Ensure that the new service names are not already registered.
+            // Ensure that the new services are not already registered.
             let mut services = self.services.write();
-            for service in services.values() {
-                if new_names.contains_key(service.name()) {
+            for service in &new_services {
+                if services.contains_name(service.name()) || services.contains_id(service.id()) {
                     return Err(FoxgloveError::DuplicateService(service.name().to_string()));
                 }
             }
 
             // Update the service map.
             for service in new_services {
-                services.insert(service.id(), Arc::new(service));
+                services.insert(service);
             }
         }
 
@@ -1421,14 +1417,15 @@ impl Server {
     /// Removes services, and unadvertises them to all clients.
     ///
     /// Unrecognized service IDs are silently ignored.
-    pub fn remove_services(&self, ids: &[ServiceId]) {
+    pub fn remove_services(&self, names: impl IntoIterator<Item = impl AsRef<str>>) {
         // Remove services from the map.
-        let mut old_services = HashMap::with_capacity(ids.len());
+        let names = names.into_iter();
+        let mut old_services = HashMap::with_capacity(names.size_hint().0);
         {
             let mut services = self.services.write();
-            for id in ids {
-                if let Some(service) = services.remove(id) {
-                    old_services.insert(*id, service.name().to_string());
+            for name in names {
+                if let Some(service) = services.remove_by_name(name) {
+                    old_services.insert(service.id(), service.name().to_string());
                 }
             }
         }
@@ -1455,7 +1452,7 @@ impl Server {
 
     // Looks up a service by ID.
     fn get_service(&self, id: ServiceId) -> Option<Arc<Service>> {
-        self.services.read().get(&id).cloned()
+        self.services.read().get_by_id(id)
     }
 
     /// Sends a connection graph update to all clients.

@@ -203,8 +203,8 @@ class Duration:
 
     def __new__(
         cls,
-        seconds: int,
-        nanos: Optional[int] = None,
+        sec: int,
+        nsec: Optional[int] = None,
     ) -> "Duration": ...
 
 class FrameTransform:
@@ -602,8 +602,8 @@ class Timestamp:
 
     def __new__(
         cls,
-        seconds: int,
-        nanos: Optional[int] = None,
+        sec: int,
+        nsec: Optional[int] = None,
     ) -> "Timestamp": ...
 
 class TriangleListPrimitive:

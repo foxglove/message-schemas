@@ -159,11 +159,12 @@ class Request:
     """
 
     service_name: str
+    client_id: int
     call_id: int
     encoding: str
     payload: bytes
 
-ServiceHandler = Callable[["Client", "Request"], bytes]
+ServiceHandler = Callable[["Request"], bytes]
 
 class Service:
     """
@@ -175,7 +176,11 @@ class Service:
     handler: "ServiceHandler"
 
     def __new__(
-        cls, *, name: str, schema: "ServiceSchema", handler: "ServiceHandler"
+        cls,
+        *,
+        name: str,
+        schema: "ServiceSchema",
+        handler: "ServiceHandler",
     ) -> "Service": ...
 
 class ServiceSchema:
@@ -241,7 +246,7 @@ def start_server(
     """
     ...
 
-def enable_logging(level: str) -> None:
+def enable_logging(level: int) -> None:
     """
     Forward SDK logs to python's logging facility.
     """

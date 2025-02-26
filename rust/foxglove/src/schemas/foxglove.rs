@@ -26,7 +26,7 @@ pub struct ArrowPrimitive {
 pub struct CameraCalibration {
     /// Timestamp of calibration data
     #[prost(message, optional, tag = "1")]
-    pub timestamp: ::core::option::Option<::prost_types::Timestamp>,
+    pub timestamp: ::core::option::Option<crate::schemas::Timestamp>,
     /// Frame of reference for the camera. The origin of the frame is the optical center of the camera. +x points to the right in the image, +y points down, and +z points into the plane of the image.
     #[prost(string, tag = "9")]
     pub frame_id: ::prost::alloc::string::String,
@@ -101,7 +101,7 @@ pub struct CameraCalibration {
 pub struct CircleAnnotation {
     /// Timestamp of circle
     #[prost(message, optional, tag = "1")]
-    pub timestamp: ::core::option::Option<::prost_types::Timestamp>,
+    pub timestamp: ::core::option::Option<crate::schemas::Timestamp>,
     /// Center of the circle in 2D image coordinates (pixels).
     /// The coordinate uses the top-left corner of the top-left pixel of the image as the origin.
     #[prost(message, optional, tag = "2")]
@@ -140,7 +140,7 @@ pub struct Color {
 pub struct CompressedImage {
     /// Timestamp of image
     #[prost(message, optional, tag = "1")]
-    pub timestamp: ::core::option::Option<::prost_types::Timestamp>,
+    pub timestamp: ::core::option::Option<crate::schemas::Timestamp>,
     /// Frame of reference for the image. The origin of the frame is the optical center of the camera. +x points to the right in the image, +y points down, and +z points into the plane of the image.
     #[prost(string, tag = "4")]
     pub frame_id: ::prost::alloc::string::String,
@@ -158,7 +158,7 @@ pub struct CompressedImage {
 pub struct CompressedVideo {
     /// Timestamp of video frame
     #[prost(message, optional, tag = "1")]
-    pub timestamp: ::core::option::Option<::prost_types::Timestamp>,
+    pub timestamp: ::core::option::Option<crate::schemas::Timestamp>,
     /// Frame of reference for the video.
     ///
     /// The origin of the frame is the optical center of the camera. +x points to the right in the video, +y points down, and +z points into the plane of the video.
@@ -234,7 +234,7 @@ pub struct CylinderPrimitive {
 pub struct FrameTransform {
     /// Timestamp of transform
     #[prost(message, optional, tag = "1")]
-    pub timestamp: ::core::option::Option<::prost_types::Timestamp>,
+    pub timestamp: ::core::option::Option<crate::schemas::Timestamp>,
     /// Name of the parent frame
     #[prost(string, tag = "2")]
     pub parent_frame_id: ::prost::alloc::string::String,
@@ -267,7 +267,7 @@ pub struct GeoJson {
 pub struct Grid {
     /// Timestamp of grid
     #[prost(message, optional, tag = "1")]
-    pub timestamp: ::core::option::Option<::prost_types::Timestamp>,
+    pub timestamp: ::core::option::Option<crate::schemas::Timestamp>,
     /// Frame of reference
     #[prost(string, tag = "2")]
     pub frame_id: ::prost::alloc::string::String,
@@ -321,7 +321,7 @@ pub struct KeyValuePair {
 pub struct LaserScan {
     /// Timestamp of scan
     #[prost(message, optional, tag = "1")]
-    pub timestamp: ::core::option::Option<::prost_types::Timestamp>,
+    pub timestamp: ::core::option::Option<crate::schemas::Timestamp>,
     /// Frame of reference
     #[prost(string, tag = "2")]
     pub frame_id: ::prost::alloc::string::String,
@@ -422,7 +422,7 @@ pub mod line_primitive {
 pub struct LocationFix {
     /// Timestamp of the message
     #[prost(message, optional, tag = "6")]
-    pub timestamp: ::core::option::Option<::prost_types::Timestamp>,
+    pub timestamp: ::core::option::Option<crate::schemas::Timestamp>,
     /// Frame for the sensor. Latitude and longitude readings are at the origin of the frame.
     #[prost(string, tag = "7")]
     pub frame_id: ::prost::alloc::string::String,
@@ -495,7 +495,7 @@ pub mod location_fix {
 pub struct Log {
     /// Timestamp of log message
     #[prost(message, optional, tag = "1")]
-    pub timestamp: ::core::option::Option<::prost_types::Timestamp>,
+    pub timestamp: ::core::option::Option<crate::schemas::Timestamp>,
     /// Log level
     #[prost(enumeration = "log::Level", tag = "2")]
     pub level: i32,
@@ -691,7 +691,7 @@ pub struct Point3 {
 pub struct PointCloud {
     /// Timestamp of point cloud
     #[prost(message, optional, tag = "1")]
-    pub timestamp: ::core::option::Option<::prost_types::Timestamp>,
+    pub timestamp: ::core::option::Option<crate::schemas::Timestamp>,
     /// Frame of reference
     #[prost(string, tag = "2")]
     pub frame_id: ::prost::alloc::string::String,
@@ -713,7 +713,7 @@ pub struct PointCloud {
 pub struct PointsAnnotation {
     /// Timestamp of annotation
     #[prost(message, optional, tag = "1")]
-    pub timestamp: ::core::option::Option<::prost_types::Timestamp>,
+    pub timestamp: ::core::option::Option<crate::schemas::Timestamp>,
     /// Type of points annotation to draw
     #[prost(enumeration = "points_annotation::Type", tag = "2")]
     pub r#type: i32,
@@ -802,7 +802,7 @@ pub struct Pose {
 pub struct PoseInFrame {
     /// Timestamp of pose
     #[prost(message, optional, tag = "1")]
-    pub timestamp: ::core::option::Option<::prost_types::Timestamp>,
+    pub timestamp: ::core::option::Option<crate::schemas::Timestamp>,
     /// Frame of reference for pose position and orientation
     #[prost(string, tag = "2")]
     pub frame_id: ::prost::alloc::string::String,
@@ -815,7 +815,7 @@ pub struct PoseInFrame {
 pub struct PosesInFrame {
     /// Timestamp of pose
     #[prost(message, optional, tag = "1")]
-    pub timestamp: ::core::option::Option<::prost_types::Timestamp>,
+    pub timestamp: ::core::option::Option<crate::schemas::Timestamp>,
     /// Frame of reference for pose position and orientation
     #[prost(string, tag = "2")]
     pub frame_id: ::prost::alloc::string::String,
@@ -844,7 +844,7 @@ pub struct Quaternion {
 pub struct RawImage {
     /// Timestamp of image
     #[prost(message, optional, tag = "1")]
-    pub timestamp: ::core::option::Option<::prost_types::Timestamp>,
+    pub timestamp: ::core::option::Option<crate::schemas::Timestamp>,
     /// Frame of reference for the image. The origin of the frame is the optical center of the camera. +x points to the right in the image, +y points down, and +z points into the plane of the image.
     #[prost(string, tag = "7")]
     pub frame_id: ::prost::alloc::string::String,
@@ -871,7 +871,7 @@ pub struct RawImage {
 pub struct SceneEntity {
     /// Timestamp of the entity
     #[prost(message, optional, tag = "1")]
-    pub timestamp: ::core::option::Option<::prost_types::Timestamp>,
+    pub timestamp: ::core::option::Option<crate::schemas::Timestamp>,
     /// Frame of reference
     #[prost(string, tag = "2")]
     pub frame_id: ::prost::alloc::string::String,
@@ -880,7 +880,7 @@ pub struct SceneEntity {
     pub id: ::prost::alloc::string::String,
     /// Length of time (relative to `timestamp`) after which the entity should be automatically removed. Zero value indicates the entity should remain visible until it is replaced or deleted.
     #[prost(message, optional, tag = "4")]
-    pub lifetime: ::core::option::Option<::prost_types::Duration>,
+    pub lifetime: ::core::option::Option<crate::schemas::Duration>,
     /// Whether the entity should keep its location in the fixed frame (false) or follow the frame specified in `frame_id` as it moves relative to the fixed frame (true)
     #[prost(bool, tag = "5")]
     pub frame_locked: bool,
@@ -917,7 +917,7 @@ pub struct SceneEntity {
 pub struct SceneEntityDeletion {
     /// Timestamp of the deletion. Only matching entities earlier than this timestamp will be deleted.
     #[prost(message, optional, tag = "1")]
-    pub timestamp: ::core::option::Option<::prost_types::Timestamp>,
+    pub timestamp: ::core::option::Option<crate::schemas::Timestamp>,
     /// Type of deletion action to perform
     #[prost(enumeration = "scene_entity_deletion::Type", tag = "2")]
     pub r#type: i32,
@@ -995,7 +995,7 @@ pub struct SpherePrimitive {
 pub struct TextAnnotation {
     /// Timestamp of annotation
     #[prost(message, optional, tag = "1")]
-    pub timestamp: ::core::option::Option<::prost_types::Timestamp>,
+    pub timestamp: ::core::option::Option<crate::schemas::Timestamp>,
     /// Bottom-left origin of the text label in 2D image coordinates (pixels).
     /// The coordinate uses the top-left corner of the top-left pixel of the image as the origin.
     #[prost(message, optional, tag = "2")]

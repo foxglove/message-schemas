@@ -3,10 +3,8 @@
 use std::fmt::Debug;
 use std::sync::Arc;
 
-use crate::websocket::service::{Service, ServiceId};
-use crate::websocket::{
-    create_server, Capability, ConnectionGraph, Parameter, Server, ServerOptions, Status,
-};
+use crate::websocket::service::Service;
+use crate::websocket::{create_server, Capability, ConnectionGraph, Parameter, Server, ServerOptions, Status};
 use crate::{get_runtime_handle, FoxgloveError, LogContext, LogSink};
 use tokio::runtime::Handle;
 use tracing::warn;
@@ -193,8 +191,8 @@ impl WebSocketServerHandle {
     }
 
     /// Removes services that were previously advertised.
-    pub fn remove_services(&self, ids: impl IntoIterator<Item = ServiceId>) {
-        self.0.remove_services(&ids.into_iter().collect::<Vec<_>>());
+    pub fn remove_services(&self, names: impl IntoIterator<Item = impl AsRef<str>>) {
+        self.0.remove_services(names);
     }
 
     /// Publishes the current server timestamp to all clients.
@@ -270,8 +268,8 @@ impl WebSocketServerBlockingHandle {
     }
 
     /// Removes services that were previously advertised.
-    pub fn remove_services(&self, ids: impl IntoIterator<Item = ServiceId>) {
-        self.0.remove_services(ids);
+    pub fn remove_services(&self, names: impl IntoIterator<Item = impl AsRef<str>>) {
+        self.0.remove_services(names);
     }
 
     /// Publishes the current server timestamp to all clients.

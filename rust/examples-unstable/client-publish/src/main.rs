@@ -8,6 +8,7 @@
 //! ```
 
 use clap::Parser;
+use foxglove::convert::SaturatingInto;
 use foxglove::schemas::log::Level;
 use foxglove::schemas::Log;
 use foxglove::websocket::{Capability, Client, ClientChannelView, ServerListener};
@@ -68,7 +69,7 @@ async fn log_forever() {
     loop {
         interval.tick().await;
         let msg = Log {
-            timestamp: Some(SystemTime::now().into()),
+            timestamp: Some(SystemTime::now().saturating_into()),
             message: format!("It's been {:?}", start.elapsed()),
             level: Level::Info.into(),
             ..Default::default()
