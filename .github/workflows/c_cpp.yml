@@ -54,7 +54,7 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           target: ${{ matrix.target }}
-      - run: sudo apt-get install aarch64-linux-gnu-gcc
+      - run: sudo apt-get install gcc-aarch64-linux-gnu
         if: matrix.target == 'aarch64-unknown-linux-gnu'
 
       - name: Build C library for ${{ matrix.target }}
