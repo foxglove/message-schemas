@@ -1,57 +1,10 @@
+use crate::websocket::protocol::server::{
+    ConnectionGraphDiff, NewAdvertisedService, NewPublishedTopic, NewSubscribedTopic,
+};
 use std::collections::{HashMap, HashSet};
-
-use serde::Serialize;
 
 /// A HashMap where the keys are the topic or service name and the value is a set of string ids.
 pub type MapOfSets = HashMap<String, HashSet<String>>;
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct NewPublishedTopic<'a> {
-    name: &'a str,
-    publisher_ids: &'a HashSet<String>,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct NewSubscribedTopic<'a> {
-    name: &'a str,
-    subscriber_ids: &'a HashSet<String>,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct NewAdvertisedService<'a> {
-    name: &'a str,
-    provider_ids: &'a HashSet<String>,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase", rename = "connectionGraphUpdate", tag = "op")]
-struct ConnectionGraphDiff<'a> {
-    published_topics: Vec<NewPublishedTopic<'a>>,
-    subscribed_topics: Vec<NewSubscribedTopic<'a>>,
-    advertised_services: Vec<NewAdvertisedService<'a>>,
-    removed_topics: HashSet<String>,
-    removed_services: Vec<String>,
-}
-
-impl ConnectionGraphDiff<'_> {
-    fn new() -> Self {
-        Self {
-            published_topics: Vec::new(),
-            subscribed_topics: Vec::new(),
-            advertised_services: Vec::new(),
-            removed_topics: HashSet::new(),
-            removed_services: Vec::new(),
-        }
-    }
-
-    fn to_json(&self) -> String {
-        // This shouldn't fail, see serde docs
-        serde_json::to_string(self).unwrap()
-    }
-}
 
 /// The connection graph data. Requires capability [`Capability::ConnectionGraph`].
 /// See https://github.com/foxglove/ws-protocol/blob/main/docs/spec.md#connection-graph-update

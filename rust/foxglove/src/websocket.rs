@@ -282,6 +282,8 @@ pub(crate) struct ConnectedClient {
     server_listener: Option<Arc<dyn ServerListener>>,
     server: Weak<Server>,
     /// Whether this client is subscribed to the connection graph
+    /// This is updated only with the connection_graph mutex held in on_connection_graph_subscribe and unsubscribe.
+    /// It's read with the connection_graph mutex held, when sending connection graph updates to clients.
     subscribed_to_connection_graph: AtomicBool,
 }
 
@@ -828,7 +830,7 @@ impl ConnectedClient {
 
         let is_subscribed = self.subscribed_to_connection_graph.load(Relaxed);
         if is_subscribed {
-            tracing::info!(
+            tracing::debug!(
                 "Client {} is already subscribed to connection graph updates",
                 self.addr
             );
@@ -869,7 +871,7 @@ impl ConnectedClient {
             return;
         }
 
-        let is_subscribed = self.subscribed_to_connection_graph.load(Relaxed);
+        let is_subscribed = self.is_subscribed_to_connection_graph();
         if !is_subscribed {
             self.send_error("Client is not subscribed to connection graph updates".to_string());
             return;
@@ -893,14 +895,14 @@ impl ConnectedClient {
 
     /// Send an ad hoc error status message to the client, with the given message.
     fn send_error(&self, message: String) {
-        tracing::error!("{}", message);
+        tracing::debug!("{}", message);
         self.send_status(Status::new(StatusLevel::Error, message));
     }
 
     /// Send an ad hoc warning status message to the client, with the given message.
     #[allow(dead_code)]
     fn send_warning(&self, message: String) {
-        tracing::warn!("{}", message);
+        tracing::debug!("{}", message);
         self.send_status(Status::new(StatusLevel::Warning, message));
     }
 
