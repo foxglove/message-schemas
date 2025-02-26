@@ -1,5 +1,7 @@
 use assert_matches::assert_matches;
 
+use crate::SaturatingFrom;
+
 use super::{Duration, RangeError, Timestamp};
 
 #[test]
@@ -58,17 +60,20 @@ fn test_duration_from_chrono_time_delta() {
     let orig = chrono::TimeDelta::new(i32::MAX as i64 + 1, 0).unwrap();
     assert_eq!(orig.num_seconds(), i32::MAX as i64 + 1);
     assert_matches!(Duration::try_from(orig), Err(RangeError::UpperBound));
+    assert_eq!(Duration::saturating_from(orig), Duration::MAX);
 
     // seconds out of range, low
     let orig = chrono::TimeDelta::new(i32::MIN as i64 - 1, 0).unwrap();
     assert_eq!(orig.num_seconds(), i32::MIN as i64 - 1);
     assert_matches!(Duration::try_from(orig), Err(RangeError::LowerBound));
+    assert_eq!(Duration::saturating_from(orig), Duration::MIN);
 
     // rounded seconds within range, but knocked out of range by nanos
     let orig = chrono::TimeDelta::new(i32::MIN as i64 - 1, 999_999_999).unwrap();
     assert_eq!(orig.num_seconds(), i32::MIN as i64);
     assert_eq!(orig.subsec_nanos(), -1);
     assert_matches!(Duration::try_from(orig), Err(RangeError::LowerBound));
+    assert_eq!(Duration::saturating_from(orig), Duration::MIN);
 }
 
 #[test]
@@ -103,8 +108,10 @@ fn test_timestamp_from_datetime_utc() {
     // too future
     let orig = chrono::DateTime::from_timestamp_nanos((u32::MAX as i64 + 1) * 1_000_000_000);
     assert_matches!(Timestamp::try_from(orig), Err(RangeError::UpperBound));
+    assert_eq!(Timestamp::saturating_from(orig), Timestamp::MAX);
 
     // too past
     let orig = chrono::DateTime::from_timestamp_nanos(-1);
     assert_matches!(Timestamp::try_from(orig), Err(RangeError::LowerBound));
+    assert_eq!(Timestamp::saturating_from(orig), Timestamp::MIN);
 }
