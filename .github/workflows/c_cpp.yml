@@ -1,0 +1,73 @@
+name: C/C++
+
+on:
+  push:
+    branches: [main]
+    tags: ["**"]
+  pull_request: {}
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: aarch64-unknown-linux-gnu
+            lib_name: libfoxglove_c.a
+            artifact_name: libfoxglove_c-aarch64-unknown-linux-gnu.a
+            cross: true
+          - runner: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+            lib_name: libfoxglove_c.a
+            artifact_name: libfoxglove_c-x86_64-unknown-linux-gnu.a
+            cross: false
+          - runner: macos-15
+            target: aarch64-apple-darwin
+            lib_name: libfoxglove_c.a
+            artifact_name: libfoxglove_c-aarch64-apple-darwin.a
+            cross: false
+          - runner: macos-15
+            target: x86_64-apple-darwin
+            lib_name: libfoxglove_c.a
+            artifact_name: libfoxglove_c-x86_64-apple-darwin.a
+            cross: true
+          - runner: windows-2025
+            target: x86_64-pc-windows-msvc
+            lib_name: foxglove_c.lib
+            artifact_name: foxglove_c-x86_64-pc-windows-msvc.lib
+            cross: false
+          - runner: windows-2025
+            target: aarch64-pc-windows-msvc
+            lib_name: foxglove_c.lib
+            artifact_name: foxglove_c-aarch64-pc-windows-msvc.lib
+            cross: true
+
+    runs-on: ${{ matrix.runner }}
+
+    env:
+      CARGO_BUILD_TARGET: ${{ matrix.target }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: ${{ matrix.target }}
+
+      - name: Build C library for ${{ matrix.target }}
+        run: make sdk-c
+        working-directory: c/foxglove
+
+      - name: Ensure generated files are up to date
+        run: git diff --exit-code
+
+      - name: Build C++ library and run tests
+        if: ${{ !matrix.cross }}
+        run: make test
+        working-directory: cpp
+
+      - name: Upload static library to artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: target/${{ matrix.target }}/release/${{ matrix.lib_name }}
