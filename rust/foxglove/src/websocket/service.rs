@@ -13,14 +13,12 @@ mod handler;
 mod request;
 mod response;
 mod schema;
-mod semaphore;
 pub use handler::{Handler, SyncHandler};
 use handler::{HandlerFn, SyncHandlerFn};
 pub use request::Request;
 pub use response::Responder;
 pub(crate) use schema::MessageSchema;
 pub use schema::ServiceSchema;
-pub(crate) use semaphore::Semaphore;
 
 /// A service ID, which uniquely identifies a service hosted by the server.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Deserialize, Serialize)]

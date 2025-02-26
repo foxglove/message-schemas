@@ -37,7 +37,9 @@ pub use fetch_asset::{
     AssetHandler, AssetResponder, AsyncAssetHandlerFn, FetchAssetResult, SyncAssetHandlerFn,
 };
 mod protocol;
+mod semaphore;
 pub mod service;
+pub(crate) use semaphore::{Semaphore, SemaphoreGuard};
 #[cfg(test)]
 mod tests;
 #[cfg(all(test, feature = "unstable"))]
@@ -134,6 +136,7 @@ type WebsocketSender = SplitSink<WebSocketStream<TcpStream>, Message>;
 const DEFAULT_MESSAGE_BACKLOG_SIZE: usize = 1024;
 const DEFAULT_CONTROL_PLANE_BACKLOG_SIZE: usize = 64;
 const DEFAULT_SERVICE_CALLS_PER_CLIENT: usize = 32;
+const DEFAULT_FETCH_ASSET_CALLS_PER_CLIENT: usize = 32;
 
 #[derive(Error, Debug)]
 enum WSError {
@@ -262,7 +265,8 @@ pub(crate) struct ConnectedClient {
     data_plane_rx: flume::Receiver<Message>,
     control_plane_tx: flume::Sender<Message>,
     control_plane_rx: flume::Receiver<Message>,
-    service_call_sem: service::Semaphore,
+    service_call_sem: Semaphore,
+    fetch_asset_sem: Semaphore,
     /// Subscriptions from this client
     subscriptions: parking_lot::Mutex<BiHashMap<ChannelId, SubscriptionId>>,
     /// Channels advertised by this client
@@ -817,8 +821,13 @@ impl ConnectedClient {
             return;
         }
 
+        let Some(guard) = self.fetch_asset_sem.try_acquire() else {
+            self.send_asset_error("Too many concurrent fetch asset requests", request_id);
+            return;
+        };
+
         if let Some(handler) = server.fetch_asset_handler.clone() {
-            let asset_responder = AssetResponder::new(Client::new(self), request_id);
+            let asset_responder = AssetResponder::new(Client::new(self), request_id, guard);
             handler.fetch(server.runtime(), uri, asset_responder);
         } else {
             self.send_asset_error("Server does not have a fetch asset handler", request_id);
@@ -849,7 +858,7 @@ impl ConnectedClient {
         }
     }
 
-    /// Send a fetch asset error to the client. Called from AssetResponder.
+    /// Send a fetch asset error to the client.
     fn send_asset_error(&self, error: &str, request_id: u32) {
         // https://github.com/foxglove/ws-protocol/blob/main/docs/spec.md#fetch-asset-response
         let mut buf = Vec::with_capacity(10 + error.len());
@@ -861,7 +870,7 @@ impl ConnectedClient {
         self.send_control_msg(message);
     }
 
-    /// Send a fetch asset response to the client. Called from AssetResponder.
+    /// Send a fetch asset response to the client.
     fn send_asset_response(&self, response: &[u8], request_id: u32) {
         // https://github.com/foxglove/ws-protocol/blob/main/docs/spec.md#fetch-asset-response
         let mut buf = Vec::with_capacity(10 + response.len());
@@ -1173,7 +1182,8 @@ impl Server {
             data_plane_rx: data_rx,
             control_plane_tx: ctrl_tx,
             control_plane_rx: ctrl_rx,
-            service_call_sem: service::Semaphore::new(DEFAULT_SERVICE_CALLS_PER_CLIENT),
+            service_call_sem: Semaphore::new(DEFAULT_SERVICE_CALLS_PER_CLIENT),
+            fetch_asset_sem: Semaphore::new(DEFAULT_FETCH_ASSET_CALLS_PER_CLIENT),
             subscriptions: parking_lot::Mutex::new(BiHashMap::new()),
             advertised_channels: parking_lot::Mutex::new(HashMap::new()),
             parameter_subscriptions: parking_lot::Mutex::new(HashSet::new()),
