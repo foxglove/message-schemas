@@ -7,45 +7,12 @@
 //! This module lives outside crate::schemas, because everything under the schemas/ direcory is
 //! generated.
 
+use crate::convert::{RangeError, SaturatingFrom};
+
 #[cfg(feature = "chrono")]
 mod chrono;
 #[cfg(test)]
 mod tests;
-
-/// A conversion error indicating that the value is outside of the range of the target type.
-#[derive(Debug, thiserror::Error)]
-pub enum RangeError {
-    /// Exceeded the lower bound.
-    #[error("Exceeded lower bound")]
-    LowerBound,
-    /// Exceeded the upper bound.
-    #[error("Exceeded upper bound")]
-    UpperBound,
-}
-
-/// A saturating version of [`From`] for conversions that fail with [`RangeError`].
-pub trait SaturatingFrom<T> {
-    /// Performs the conversion.
-    fn saturating_from(value: T) -> Self;
-}
-
-/// A saturating version of [`Into`] for conversions that fail with [`RangeError`].
-///
-/// Library authors usually should not implement this trait, but instead prefer to implement
-/// [`SaturatingFrom`].
-pub trait SaturatingInto<T> {
-    /// Performs the conversion.
-    fn saturating_into(self) -> T;
-}
-
-impl<T, U> SaturatingInto<T> for U
-where
-    T: SaturatingFrom<U>,
-{
-    fn saturating_into(self) -> T {
-        T::saturating_from(self)
-    }
-}
 
 /// Converts time integer types and normalizes excessive nanoseconds into seconds.
 fn normalize(sec: impl Into<i64>, mut nsec: u32) -> (i64, i32) {
@@ -110,12 +77,12 @@ fn normalize(sec: impl Into<i64>, mut nsec: u32) -> (i64, i32) {
 /// }
 /// ```
 ///
-/// The [`SaturatingFrom`] and [`SaturatingInto`] traits may be used to saturate when the range is
-/// exceeded.
+/// The [`SaturatingFrom`] and [`SaturatingInto`][crate::convert::SaturatingInto] traits may be
+/// used to saturate when the range is exceeded.
 ///
 /// ```
 /// # use foxglove::schemas::Duration;
-/// use foxglove::SaturatingInto;
+/// use foxglove::convert::SaturatingInto;
 ///
 /// let duration: Duration = std::time::Duration::from_secs(u64::MAX).saturating_into();
 /// assert_eq!(duration, Duration::MAX);
@@ -241,12 +208,12 @@ where
 /// }
 /// ```
 ///
-/// The [`SaturatingFrom`] and [`SaturatingInto`] traits may be used to saturate when the range is
-/// exceeded.
+/// The [`SaturatingFrom`] and [`SaturatingInto`][crate::convert::SaturatingInto] traits may be
+/// used to saturate when the range is exceeded.
 ///
 /// ```
 /// # use foxglove::schemas::Timestamp;
-/// use foxglove::SaturatingInto;
+/// use foxglove::convert::SaturatingInto;
 ///
 /// let timestamp: Timestamp = std::time::SystemTime::UNIX_EPOCH
 ///     .checked_sub(std::time::Duration::from_secs(1))

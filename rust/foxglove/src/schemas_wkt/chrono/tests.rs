@@ -1,8 +1,7 @@
 use assert_matches::assert_matches;
 
-use crate::SaturatingFrom;
-
-use super::{Duration, RangeError, Timestamp};
+use super::{Duration, Timestamp};
+use crate::convert::{RangeError, SaturatingFrom};
 
 #[test]
 fn test_duration_from_chrono_time_delta() {

@@ -1,6 +1,7 @@
 //! Conversions from chrono types.
 
-use super::{Duration, RangeError, Timestamp};
+use super::{Duration, Timestamp};
+use crate::convert::RangeError;
 
 #[cfg(test)]
 mod tests;

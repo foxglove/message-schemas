@@ -1,6 +1,7 @@
 use assert_matches::assert_matches;
 
-use super::{normalize, Duration, RangeError, SaturatingFrom, Timestamp};
+use super::{normalize, Duration, Timestamp};
+use crate::convert::{RangeError, SaturatingFrom};
 
 #[test]
 fn test_normalize() {
