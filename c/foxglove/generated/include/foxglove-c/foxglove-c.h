@@ -19,18 +19,21 @@ extern "C" {
 #endif // __cplusplus
 
 /**
- * Create a server. The server must later be freed with `foxglove_server_destroy`.
+ * Create and start a server. The server must later be freed with `foxglove_server_destroy`.
+ *
+ * # Safety
+ * `name` and `host` must be null-terminated strings with valid UTF8.
  */
-struct foxglove_websocket_server *foxglove_server_create(const char *name,
-                                                         const char *host,
-                                                         uint16_t port);
+struct foxglove_websocket_server *foxglove_server_start(const char *name,
+                                                        const char *host,
+                                                        uint16_t port);
 
 /**
  * Free a server created via `foxglove_server_start`.
+ *
+ * If the server has not already been stopped, it will be stopped automatically.
  */
 void foxglove_server_destroy(struct foxglove_websocket_server *server);
-
-void foxglove_server_start(struct foxglove_websocket_server *server);
 
 void foxglove_server_stop(struct foxglove_websocket_server *server);
 

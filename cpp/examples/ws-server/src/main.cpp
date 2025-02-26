@@ -16,12 +16,11 @@ int main(int argc, const char* argv[]) {
   });
 
   foxglove::WebSocketServerOptions options{
-    .name = "ws-demo",
+    .name = "ws-demo-cpp",
     .host = "127.0.0.1",
     .port = 8765,
   };
   foxglove::WebSocketServer server{options};
-  server.start();
   std::cerr << "Started server" << std::endl;
 
   std::atomic_bool done = false;

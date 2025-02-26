@@ -9,6 +9,5 @@ TEST_CASE("Start and stop server") {
     .port = 8765,
   };
   foxglove::WebSocketServer server{options};
-  server.start();
   server.stop();
 }

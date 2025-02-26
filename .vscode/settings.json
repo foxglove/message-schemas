@@ -31,5 +31,6 @@
   },
   "C_Cpp.formatting": "clangFormat",
   // https://github.com/microsoft/vscode-cpptools/issues/722
-  "C_Cpp.autoAddFileAssociations": false
+  "C_Cpp.autoAddFileAssociations": false,
+  "rust-analyzer.check.command": "clippy"
 }

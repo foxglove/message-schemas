@@ -15,7 +15,6 @@ struct WebSocketServerOptions {
 class WebSocketServer {
 public:
   WebSocketServer(WebSocketServerOptions options);
-  void start();
   void stop();
 
 private:
