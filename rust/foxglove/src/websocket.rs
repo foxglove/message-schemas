@@ -6,13 +6,14 @@ pub(crate) use crate::websocket::protocol::client::{
     ClientChannel, ClientChannelId, ClientMessage, Subscription, SubscriptionId,
 };
 pub use crate::websocket::protocol::server::{
-    Capability, Parameter, ParameterType, ParameterValue, Status, StatusLevel,
+    Parameter, ParameterType, ParameterValue, Status, StatusLevel,
 };
 use crate::{get_runtime_handle, Channel, FoxgloveError, LogSink, Metadata};
 use bimap::BiHashMap;
 use bytes::{BufMut, BytesMut};
 use flume::TrySendError;
 use futures_util::{stream::SplitSink, SinkExt, StreamExt};
+use serde::Serialize;
 use std::collections::hash_map::Entry;
 use std::collections::HashSet;
 use std::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed};
@@ -47,9 +48,36 @@ mod unstable_tests;
 
 use service::{CallId, Service, ServiceId};
 
+/// A capability that a websocket server can support.
+#[derive(Debug, Serialize, Eq, PartialEq, Hash, Clone, Copy)]
+#[serde(rename_all = "camelCase")]
+pub enum Capability {
+    /// Allow clients to advertise channels to send data messages to the server.
+    ClientPublish,
+    /// Allow clients to get & set parameters, and subscribe to updates.
+    Parameters,
+    /// Inform clients about the latest server time.
+    ///
+    /// This allows accelerated, slowed, or stepped control over the progress of time. If the
+    /// server publishes time data, then timestamps of published messages must originate from the
+    /// same time source.
+    #[cfg(feature = "unstable")]
+    Time,
+    /// Allow clients to call services.
+    Services,
+    /// Allow clients to request assets.
+    Assets,
+}
+
 /// Identifies a client connection. Unique for the duration of the server's lifetime.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct ClientId(u32);
+
+impl From<ClientId> for u32 {
+    fn from(client: ClientId) -> Self {
+        client.0
+    }
+}
 
 /// A connected client session with the websocket server.
 #[derive(Debug, Clone)]
@@ -240,6 +268,9 @@ pub trait ServerListener: Send + Sync {
     /// Should return the updated parameters for the passed parameters.
     /// The implementation could return the modified parameters.
     /// All clients subscribed to updates for the _returned_ parameters will be notified.
+    ///
+    /// Note that only `parameters` which have changed are included in the callback, but the return
+    /// value must include all parameters.
     fn on_set_parameters(
         &self,
         _client: Client,
@@ -248,9 +279,11 @@ pub trait ServerListener: Send + Sync {
     ) -> Vec<Parameter> {
         parameters
     }
-    /// Callback invoked when a client subscribes to parameters. Requires [`Capability::ParametersSubscribe`].
+    /// Callback invoked when a client subscribes to the named parameters for the first time.
+    /// Requires [`Capability::Parameters`].
     fn on_parameters_subscribe(&self, _param_names: Vec<String>) {}
-    /// Callback invoked when a client unsubscribes from parameters. Requires [`Capability::ParametersSubscribe`].
+    /// Callback invoked when the last client unsubscribes from the named parameters.
+    /// Requires [`Capability::Parameters`].
     fn on_parameters_unsubscribe(&self, _param_names: Vec<String>) {}
 }
 
@@ -370,10 +403,7 @@ impl ConnectedClient {
     fn on_disconnect(&self, server: &Arc<Server>) {
         // If we track paramter subscriptions, unsubscribe this clients subscriptions
         // and notify the handler, if necessary
-        if !server
-            .capabilities
-            .contains(&Capability::ParametersSubscribe)
-            || self.server_listener.is_none()
+        if !server.capabilities.contains(&Capability::Parameters) || self.server_listener.is_none()
         {
             return;
         }
@@ -673,10 +703,7 @@ impl ConnectedClient {
     }
 
     fn on_parameters_subscribe(&self, server: Arc<Server>, param_names: Vec<String>) {
-        if !server
-            .capabilities
-            .contains(&Capability::ParametersSubscribe)
-        {
+        if !server.capabilities.contains(&Capability::Parameters) {
             self.send_error("Server does not support parametersSubscribe capability".to_string());
             return;
         }
@@ -722,10 +749,7 @@ impl ConnectedClient {
     }
 
     fn on_parameters_unsubscribe(&self, server: Arc<Server>, mut param_names: Vec<String>) {
-        if !server
-            .capabilities
-            .contains(&Capability::ParametersSubscribe)
-        {
+        if !server.capabilities.contains(&Capability::Parameters) {
             self.send_error("Server does not support parametersSubscribe capability".to_string());
             return;
         }
@@ -1093,7 +1117,7 @@ impl Server {
         }
     }
 
-    /// Publish parameter values to all clients.
+    /// Publish parameter values to all subscribed clients.
     pub fn publish_parameter_values(&self, parameters: Vec<Parameter>) {
         if !self.capabilities.contains(&Capability::Parameters) {
             tracing::error!("Server does not support parameters capability");
@@ -1106,7 +1130,7 @@ impl Server {
         }
     }
 
-    /// Send a message to all clients.
+    /// Send a status message to all clients.
     pub fn publish_status(&self, status: Status) {
         let clients = self.clients.get();
         for client in clients.iter() {

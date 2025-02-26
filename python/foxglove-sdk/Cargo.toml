@@ -9,6 +9,7 @@ name = "foxglove_py"
 crate-type = ["cdylib"]
 
 [dependencies]
+bytes.workspace = true
 env_logger = "0.11.5"
 log = "0.4.22"
 prost-types = "0.13"
@@ -19,6 +20,7 @@ thiserror.workspace = true
 tokio-tungstenite.workspace = true
 tokio-util.workspace = true
 tokio.workspace = true
+tracing.workspace = true
 
 [build-dependencies]
 walkdir = "2.5.0"

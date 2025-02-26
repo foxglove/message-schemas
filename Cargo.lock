@@ -654,6 +654,7 @@ dependencies = [
 name = "foxglove-sdk-python"
 version = "0.2.1"
 dependencies = [
+ "bytes",
  "env_logger",
  "foxglove",
  "log",
@@ -664,6 +665,7 @@ dependencies = [
  "tokio",
  "tokio-tungstenite",
  "tokio-util",
+ "tracing",
  "walkdir",
 ]
 

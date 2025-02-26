@@ -629,9 +629,9 @@ export function generateChannelClasses(messageSchemas: FoxgloveMessageSchema[]):
   const schemas = messageSchemas.filter((schema) => !schema.name.endsWith("Primitive"));
 
   const imports = [
-    `use foxglove::TypedChannel;`,
+    `use foxglove::{TypedChannel, PartialMetadata};`,
     `use pyo3::prelude::*;`,
-    `use crate::{errors::PyFoxgloveError, PartialMetadata};`,
+    `use crate::errors::PyFoxgloveError;`,
     `use super::schemas;`,
   ].join("\n");
 
@@ -659,17 +659,24 @@ impl ${channelClass} {
     /// Log a :py:class:\`foxglove.schemas.${schemaClass}\` message to the channel.
     ///
     /// :param msg: The message to log.
-    fn log(&self, msg: &schemas::${schemaClass}) {
-        self.0.log(&msg.0);
-    }
-
-    fn log_with_meta(
+    /// :param log_time: The log time is the time, as nanoseconds from the unix epoch, that the
+    ///     message was recorded. Usually this is the time log() is called. If omitted, the
+    ///     current time is used.
+    /// :param publish_time: The publish_time is the time at which the message was published. e.g.
+    ///     the timestamp at which the sensor reading was taken. If omitted, log time is used.
+    /// :param sequence: The sequence number is unique per channel and allows for ordering of
+    ///     messages as well as detecting missing messages. If omitted, a monotonically increasing
+    ///     sequence number unique to the channel is used.
+    #[pyo3(signature = (msg, *, log_time=None, publish_time=None, sequence=None))]
+    fn log(
         &self,
         msg: &schemas::${schemaClass},
-        metadata: Bound<'_, PartialMetadata>,
+        log_time: Option<u64>,
+        publish_time: Option<u64>,
+        sequence: Option<u32>,
     ) {
-        let metadata = metadata.extract::<PartialMetadata>().ok().unwrap_or_default();
-        self.0.log_with_meta(&msg.0, metadata.into());
+        let metadata = PartialMetadata{ log_time, publish_time, sequence };
+        self.0.log_with_meta(&msg.0, metadata);
     }
 
     fn __repr__(&self) -> String {
@@ -690,7 +697,6 @@ export function generatePyChannelStub(messageSchemas: FoxgloveMessageSchema[]): 
   const schemas = messageSchemas.filter((schema) => !schema.name.endsWith("Primitive"));
 
   const imports = [
-    `from . import PartialMetadata`,
     ...schemas.map((schema) =>  `from .schemas import ${structName(schema.name)}`),
   ];
 
@@ -711,12 +717,10 @@ export function generatePyChannelStub(messageSchemas: FoxgloveMessageSchema[]): 
         `    def log(`,
         `        self,`,
         `        message: "${schemaClass}",`,
-        `    ) -> "${channelClass}": ...\n`,
-        `    def log_with_meta(`,
-        `        self,`,
-        `        message: "${schemaClass}",`,
-        `        metadata: "PartialMetadata",`,
-        `    ) -> "${channelClass}": ...\n`,
+        `        log_time: int | None = None,`,
+        `        publish_time: int | None = None,`,
+        `        sequence: int | None = None,`,
+        `    ) -> None: ...\n`,
       ].join("\n"),
     };
   });

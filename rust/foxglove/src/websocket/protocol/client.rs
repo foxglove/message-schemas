@@ -136,6 +136,12 @@ impl From<ClientChannelId> for u32 {
     }
 }
 
+impl From<ClientChannelId> for u64 {
+    fn from(id: ClientChannelId) -> u64 {
+        id.0.into()
+    }
+}
+
 impl std::fmt::Display for ClientChannelId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)

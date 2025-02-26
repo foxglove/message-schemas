@@ -1,13 +1,13 @@
 import json
+import logging
 import math
 import struct
+import time
+from math import cos, sin
+
 import foxglove
 import numpy as np
-import time
-
-from examples.geometry import euler_to_quaternion
-
-from foxglove import SchemaDefinition
+from foxglove import Capability, SchemaDefinition
 from foxglove.channels import (
     FrameTransformsChannel,
     PointCloudChannel,
@@ -44,10 +44,61 @@ plot_schema = {
 }
 
 
+class ExampleListener(foxglove.ServerListener):
+    def __init__(self) -> None:
+        self.subscribers: set[int] = set()
+
+    def has_subscribers(self) -> bool:
+        return len(self.subscribers) > 0
+
+    def on_subscribe(
+        self,
+        client: foxglove.Client,
+        channel: foxglove.ChannelView,
+    ) -> None:
+        """
+        Called by the server when a client subscribes to a channel.
+        We'll use this and on_unsubscribe to simply track if we have any subscribers at all.
+        """
+        logging.info(f"Client {client} subscribed to channel {channel.topic}")
+        self.subscribers.add(client.id)
+
+    def on_unsubscribe(
+        self,
+        client: foxglove.Client,
+        channel: foxglove.ChannelView,
+    ) -> None:
+        """
+        Called by the server when a client unsubscribes from a channel.
+        """
+        logging.info(f"Client {client} unsubscribed from channel {channel.topic}")
+        self.subscribers.remove(client.id)
+
+    def on_message_data(
+        self,
+        client: foxglove.Client,
+        channel: foxglove.ChannelView,
+        data: bytes,
+    ) -> None:
+        """
+        This handler demonstrates receiving messages from the client.
+        You can send messages from Foxglove app in the publish panel:
+        https://docs.foxglove.dev/docs/visualization/panels/publish
+        """
+        logging.info(f"Message from client {client.id} on channel {channel.topic}")
+        logging.info(f"Data: {data!r}")
+
+
 def main() -> None:
     foxglove.verbose_on()
 
-    server = foxglove.start_server()
+    listener = ExampleListener()
+
+    server = foxglove.start_server(
+        server_listener=listener,
+        capabilities=[Capability.ClientPublish],
+        supported_encodings=["json"],
+    )
 
     # Log messages having well-known Foxglove schemas using the appropriate channel type.
     box_chan = SceneUpdateChannel("/boxes")
@@ -71,6 +122,9 @@ def main() -> None:
     try:
         counter = 0
         while True:
+            if not listener.has_subscribers():
+                continue
+
             counter += 1
             now = time.time()
             y = np.sin(now)
@@ -101,8 +155,6 @@ def main() -> None:
                     ]
                 )
             )
-
-            sin_chan.log(json_msg)
 
             box_chan.log(
                 SceneUpdate(
@@ -182,6 +234,30 @@ def make_point_cloud() -> PointCloud:
         ],
         data=bytes(buffer),
     )
+
+
+def euler_to_quaternion(roll: float, pitch: float, yaw: float) -> Quaternion:
+    """Convert Euler angles to a rotation quaternion
+
+    See e.g. https://danceswithcode.net/engineeringnotes/quaternions/quaternions.html
+
+    :param roll: rotation around X axis (radians)
+    :param pitch: rotation around Y axis (radians)
+    :param yaw: rotation around Z axis (radians)
+    :returns: a protobuf Quaternion
+    """
+    roll, pitch, yaw = roll * 0.5, pitch * 0.5, yaw * 0.5
+
+    sin_r, cos_r = sin(roll), cos(roll)
+    sin_p, cos_p = sin(pitch), cos(pitch)
+    sin_y, cos_y = sin(yaw), cos(yaw)
+
+    w = cos_r * cos_p * cos_y + sin_r * sin_p * sin_y
+    x = sin_r * cos_p * cos_y - cos_r * sin_p * sin_y
+    y = cos_r * sin_p * cos_y + sin_r * cos_p * sin_y
+    z = cos_r * cos_p * sin_y - sin_r * sin_p * cos_y
+
+    return Quaternion(x=x, y=y, z=z, w=w)
 
 
 if __name__ == "__main__":
