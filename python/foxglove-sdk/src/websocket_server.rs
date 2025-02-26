@@ -405,10 +405,11 @@ impl PyWebSocketServer {
     /// :type services: list[:py:class:`Service`]
     pub fn add_services(&self, py: Python<'_>, services: Vec<PyService>) -> PyResult<()> {
         if let Some(server) = &self.0 {
-            let services = services
-                .into_iter()
-                .map(foxglove::websocket::service::Service::from);
-            py.allow_threads(move || server.add_services(services).map_err(PyFoxgloveError::from))?;
+            py.allow_threads(move || {
+                server
+                    .add_services(services.into_iter().map(|s| s.into()))
+                    .map_err(PyFoxgloveError::from)
+            })?;
         }
         Ok(())
     }
