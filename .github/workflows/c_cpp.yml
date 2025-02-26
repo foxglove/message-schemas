@@ -43,6 +43,7 @@ jobs:
             artifact_name: foxglove_c-aarch64-pc-windows-msvc.lib
             cross: true
 
+    name: build (${{ matrix.target }})
     runs-on: ${{ matrix.runner }}
 
     env:
@@ -55,7 +56,7 @@ jobs:
           target: ${{ matrix.target }}
 
       - name: Build C library for ${{ matrix.target }}
-        run: make sdk-c
+        run: cargo build --release
         working-directory: c/foxglove
 
       - name: Ensure generated files are up to date
