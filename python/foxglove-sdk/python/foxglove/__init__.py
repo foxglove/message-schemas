@@ -24,17 +24,12 @@ from ._foxglove_py import (
     ServiceSchema,
     StatusLevel,
     WebSocketServer,
-    disable_logging,
     enable_logging,
     open_mcap,
     shutdown,
 )
 from ._foxglove_py import start_server as _start_server
 from .channel import Channel, SchemaDefinition, log
-
-logging.basicConfig(
-    level=logging.DEBUG, format="%(asctime)s [%(levelname)s] %(message)s"
-)
 
 atexit.register(shutdown)
 
@@ -144,7 +139,7 @@ class ServerListener(Protocol):
         return None
 
 
-ServiceHandler = Callable[["Client", "Request"], bytes]
+ServiceHandler = Callable[["Request"], bytes]
 
 
 def start_server(
@@ -178,37 +173,48 @@ def start_server(
     )
 
 
-def _log_level_from_int(level: int) -> str:
-    log_levels = {10: "debug", 20: "info", 30: "warn", 40: "error"}
-    return log_levels.get(level, "unknown")
-
-
-def verbose_on(level: Union[int, str] = "debug") -> None:
+def set_log_level(level: Union[int, str] = "INFO") -> None:
     """
     Enable SDK logging.
+
+    This function will call logging.basicConfig() for convenience in scripts, but in general you
+    should configure logging yourself before calling this function:
+    https://docs.python.org/3/library/logging.html
+
+    :param level: The logging level to set. This accepts the same values as `logging.setLevel` and
+        defaults to "INFO". The SDK will not log at levels "CRITICAL" or higher.
     """
-    if isinstance(level, int):
-        assert level in [
-            logging.DEBUG,
-            logging.INFO,
-            logging.WARN,
-            logging.ERROR,
-        ], ValueError("Invalid log level")
-        level = _log_level_from_int(level)
-    else:
-        assert level in ["debug", "info", "warn", "error"], ValueError(
-            "Invalid log level"
+    # This will raise a ValueError for invalid levels if the user has not already configured
+    logging.basicConfig(level=level, format="%(asctime)s [%(levelname)s] %(message)s")
+
+    if isinstance(level, str):
+        level_map = (
+            logging.getLevelNamesMapping()
+            if hasattr(logging, "getLevelNamesMapping")
+            else _level_names()
         )
-    logging.debug(f"SDK logging enabled ({level.upper()})")
+        try:
+            level = level_map[level]
+        except KeyError:
+            raise ValueError(f"Unknown log level: {level}")
+    else:
+        level = max(0, min(2**32 - 1, level))
+
     enable_logging(level)
 
 
-def verbose_off() -> None:
-    """
-    Disable SDK logging.
-    """
-    logging.debug("SDK logging disabled")
-    disable_logging()
+def _level_names() -> dict[str, int]:
+    # Fallback for Python <3.11; no support for custom levels
+    return {
+        "CRITICAL": logging.CRITICAL,
+        "FATAL": logging.FATAL,
+        "ERROR": logging.ERROR,
+        "WARN": logging.WARNING,
+        "WARNING": logging.WARNING,
+        "INFO": logging.INFO,
+        "DEBUG": logging.DEBUG,
+        "NOTSET": logging.NOTSET,
+    }
 
 
 __all__ = [
@@ -231,7 +237,6 @@ __all__ = [
     "WebSocketServer",
     "log",
     "open_mcap",
+    "set_log_level",
     "start_server",
-    "verbose_off",
-    "verbose_on",
 ]

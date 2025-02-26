@@ -155,12 +155,14 @@
 //! [tokio]: https://docs.rs/tokio/latest/tokio/
 
 #![warn(missing_docs)]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 use thiserror::Error;
 
 mod channel;
 mod channel_builder;
 mod collection;
+pub mod convert;
 mod cow_vec;
 mod encode;
 mod log_context;
@@ -170,14 +172,14 @@ mod mcap_writer;
 mod metadata;
 mod runtime;
 pub mod schemas;
-mod time;
-pub mod websocket;
-mod websocket_server;
-
+mod schemas_wkt;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
 mod testutil;
+mod time;
+pub mod websocket;
+mod websocket_server;
 
 pub use channel::{Channel, Schema};
 pub use channel_builder::ChannelBuilder;
@@ -232,4 +234,10 @@ pub enum FoxgloveError {
     /// An error related to MCAP encoding.
     #[error("MCAP error: {0}")]
     McapError(#[from] mcap::McapError),
+}
+
+impl From<convert::RangeError> for FoxgloveError {
+    fn from(err: convert::RangeError) -> Self {
+        FoxgloveError::Unspecified(err.into())
+    }
 }

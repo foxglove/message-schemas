@@ -4,7 +4,7 @@ use std::fmt::Debug;
 use std::future::Future;
 use std::sync::Arc;
 
-use crate::websocket::service::{Service, ServiceId};
+use crate::websocket::service::Service;
 use crate::websocket::{
     create_server, AssetHandler, AsyncAssetHandlerFn, Capability, Client, FetchAssetResult,
     Parameter, Server, ServerOptions, Status, SyncAssetHandlerFn,
@@ -220,8 +220,8 @@ impl WebSocketServerHandle {
     }
 
     /// Removes services that were previously advertised.
-    pub fn remove_services(&self, ids: impl IntoIterator<Item = ServiceId>) {
-        self.0.remove_services(&ids.into_iter().collect::<Vec<_>>());
+    pub fn remove_services(&self, names: impl IntoIterator<Item = impl AsRef<str>>) {
+        self.0.remove_services(names);
     }
 
     /// Publishes the current server timestamp to all clients.
@@ -279,7 +279,7 @@ impl WebSocketServerBlockingHandle {
     /// [`remove_services`][WebSocketServerBlockingHandle::remove_services].
     ///
     /// This method will fail if the server was not configured with [`Capability::Services`].
-    pub async fn add_services(
+    pub fn add_services(
         &self,
         services: impl IntoIterator<Item = Service>,
     ) -> Result<(), FoxgloveError> {
@@ -287,8 +287,8 @@ impl WebSocketServerBlockingHandle {
     }
 
     /// Removes services that were previously advertised.
-    pub async fn remove_services(&self, ids: impl IntoIterator<Item = ServiceId>) {
-        self.0.remove_services(ids);
+    pub fn remove_services(&self, names: impl IntoIterator<Item = impl AsRef<str>>) {
+        self.0.remove_services(names);
     }
 
     /// Publishes the current server timestamp to all clients.

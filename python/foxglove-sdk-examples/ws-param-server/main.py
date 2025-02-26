@@ -63,7 +63,7 @@ class ParameterStore(foxglove.ServerListener):
 
 
 def main() -> None:
-    foxglove.verbose_on()
+    foxglove.set_log_level(logging.DEBUG)
 
     initial_values: list[Parameter] = [
         Parameter(
