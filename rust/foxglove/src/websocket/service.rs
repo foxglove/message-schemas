@@ -217,16 +217,6 @@ impl ServiceMap {
         assert!(prev.is_none());
     }
 
-    /// Returns true if the map contains a service with the provided name.
-    pub fn contains_name(&mut self, name: impl AsRef<str>) -> bool {
-        self.name.contains_key(name.as_ref())
-    }
-
-    /// Returns true if the map contains a service with the provided ID.
-    pub fn contains_id(&mut self, id: ServiceId) -> bool {
-        self.id.contains_key(&id)
-    }
-
     /// Removes a service by name.
     pub fn remove_by_name(&mut self, name: impl AsRef<str>) -> Option<Arc<Service>> {
         if let Some(id) = self.name.remove(name.as_ref()) {
@@ -234,6 +224,16 @@ impl ServiceMap {
         } else {
             None
         }
+    }
+
+    /// Returns true if the map contains a service with the provided name.
+    pub fn contains_name(&self, name: impl AsRef<str>) -> bool {
+        self.name.contains_key(name.as_ref())
+    }
+
+    /// Returns true if the map contains a service with the provided ID.
+    pub fn contains_id(&self, id: ServiceId) -> bool {
+        self.id.contains_key(&id)
     }
 
     /// Returns an iterator over services.
