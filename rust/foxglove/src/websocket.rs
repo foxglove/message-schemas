@@ -782,10 +782,11 @@ impl ConnectedClient {
             service.response_encoding().unwrap_or(&req.encoding),
             guard,
         );
-        let request = service::Request::new(service.clone(), call_id, req.encoding, req.payload);
+        let request =
+            service::Request::new(service.clone(), self.id, call_id, req.encoding, req.payload);
 
         // Invoke the handler.
-        service.call(Client(self), request, responder);
+        service.call(request, responder);
     }
 
     /// Sends a service call failure message to the client with the provided message.

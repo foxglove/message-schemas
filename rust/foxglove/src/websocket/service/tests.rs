@@ -1,10 +1,8 @@
 use bytes::Bytes;
 
-use crate::websocket::Client;
-
 use super::{Request, Service, ServiceId, ServiceMap, ServiceSchema};
 
-fn handler(_: Client, _: Request) -> Result<Bytes, &'static str> {
+fn handler(_: Request) -> Result<Bytes, &'static str> {
     Err("")
 }
 
