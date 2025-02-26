@@ -7,7 +7,7 @@ repository = "https://github.com/foxglove/foxglove-sdk"
 license = "MIT"
 
 [features]
-default = ["chrono"]
+default = []
 chrono = ["dep:chrono"]
 unstable = []
 
