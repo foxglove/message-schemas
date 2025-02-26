@@ -29,32 +29,6 @@ pub trait SaturatingFrom<T> {
     fn saturating_from(value: T) -> Self;
 }
 
-impl<T> SaturatingFrom<T> for Duration
-where
-    Self: TryFrom<T, Error = RangeError>,
-{
-    fn saturating_from(value: T) -> Self {
-        match Self::try_from(value) {
-            Ok(d) => d,
-            Err(RangeError::LowerBound) => Duration::MIN,
-            Err(RangeError::UpperBound) => Duration::MAX,
-        }
-    }
-}
-
-impl<T> SaturatingFrom<T> for Timestamp
-where
-    Self: TryFrom<T, Error = RangeError>,
-{
-    fn saturating_from(value: T) -> Self {
-        match Self::try_from(value) {
-            Ok(d) => d,
-            Err(RangeError::LowerBound) => Timestamp::MIN,
-            Err(RangeError::UpperBound) => Timestamp::MAX,
-        }
-    }
-}
-
 /// A saturating version of [`Into`] for conversions that fail with [`RangeError`].
 ///
 /// Library authors usually should not implement this trait, but instead prefer to implement
@@ -223,6 +197,19 @@ impl TryFrom<std::time::Duration> for Duration {
     }
 }
 
+impl<T> SaturatingFrom<T> for Duration
+where
+    Self: TryFrom<T, Error = RangeError>,
+{
+    fn saturating_from(value: T) -> Self {
+        match Self::try_from(value) {
+            Ok(d) => d,
+            Err(RangeError::LowerBound) => Duration::MIN,
+            Err(RangeError::UpperBound) => Duration::MAX,
+        }
+    }
+}
+
 /// A timestamp, represented as an offset from a user-defined epoch.
 ///
 /// # Example
@@ -341,5 +328,18 @@ impl TryFrom<std::time::SystemTime> for Timestamp {
         };
         let nsec = duration.subsec_nanos();
         Ok(Self { sec, nsec })
+    }
+}
+
+impl<T> SaturatingFrom<T> for Timestamp
+where
+    Self: TryFrom<T, Error = RangeError>,
+{
+    fn saturating_from(value: T) -> Self {
+        match Self::try_from(value) {
+            Ok(d) => d,
+            Err(RangeError::LowerBound) => Timestamp::MIN,
+            Err(RangeError::UpperBound) => Timestamp::MAX,
+        }
     }
 }
