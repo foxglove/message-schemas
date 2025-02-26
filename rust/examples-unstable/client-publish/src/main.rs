@@ -68,7 +68,7 @@ async fn log_forever() {
     loop {
         interval.tick().await;
         let msg = Log {
-            timestamp: Some(SystemTime::now().into()),
+            timestamp: Some(SystemTime::now().try_into().expect("timestamp in range")),
             message: format!("It's been {:?}", start.elapsed()),
             level: Level::Info.into(),
             ..Default::default()

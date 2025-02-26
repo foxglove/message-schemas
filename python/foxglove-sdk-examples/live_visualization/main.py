@@ -162,7 +162,7 @@ def main() -> None:
                         SceneEntity(
                             frame_id="box",
                             id="box_1",
-                            lifetime=Duration(seconds=10),
+                            lifetime=Duration(sec=10),
                             cubes=[
                                 CubePrimitive(
                                     pose=Pose(

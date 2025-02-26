@@ -170,14 +170,14 @@ mod mcap_writer;
 mod metadata;
 mod runtime;
 pub mod schemas;
-mod time;
-pub mod websocket;
-mod websocket_server;
-
+mod schemas_wkt;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
 mod testutil;
+mod time;
+pub mod websocket;
+mod websocket_server;
 
 pub use channel::{Channel, Schema};
 pub use channel_builder::ChannelBuilder;
@@ -232,4 +232,10 @@ pub enum FoxgloveError {
     /// An error related to MCAP encoding.
     #[error("MCAP error: {0}")]
     McapError(#[from] mcap::McapError),
+    /// [`Duration`][schemas::Duration] outside of representable range.
+    #[error("Duration out of range")]
+    DurationOutOfRange,
+    /// [`Timestamp`][schemas::Timestamp] outside of representable range.
+    #[error("Timestamp out of range")]
+    TimestampOutOfRange,
 }

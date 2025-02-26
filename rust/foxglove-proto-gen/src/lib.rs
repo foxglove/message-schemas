@@ -199,6 +199,8 @@ pub fn generate_protos(proto_path: &Path, out_dir: &Path) -> anyhow::Result<()> 
     }
 
     let mut config = prost_build::Config::new();
+    config.extern_path(".google.protobuf.Duration", "crate::schemas::Duration");
+    config.extern_path(".google.protobuf.Timestamp", "crate::schemas::Timestamp");
     config.out_dir(out_dir);
 
     let mut fds = config

@@ -72,73 +72,57 @@ pub(crate) enum LocationFixPositionCovarianceType {
 
 /// A timestamp in seconds and nanoseconds
 ///
-/// :param seconds: The number of seconds since a user-defined epoch.
-/// :param nanos: The number of nanoseconds since the :py:attr:`seconds` value.
+/// :param sec: The number of seconds since a user-defined epoch.
+/// :param nsec: The number of nanoseconds since the :py:attr:`sec` value.
 #[pyclass(module = "foxglove.schemas")]
 #[derive(Clone)]
-pub struct Timestamp {
-    pub seconds: i64,
-    pub nanos: i32,
-}
+pub struct Timestamp(pub(crate) foxglove::schemas::Timestamp);
 
 #[pymethods]
 impl Timestamp {
     #[new]
-    #[pyo3(signature = (seconds=0, nanos=None))]
-    fn new(seconds: i64, nanos: Option<i32>) -> Self {
-        Self {
-            seconds,
-            nanos: nanos.unwrap_or_default(),
-        }
+    #[pyo3(signature = (sec, nsec=None))]
+    fn new(sec: u32, nsec: Option<u32>) -> Self {
+        let nsec = nsec.unwrap_or(0);
+        Self(foxglove::schemas::Timestamp { sec, nsec })
     }
 
     fn __repr__(&self) -> String {
-        format!("Timestamp(seconds={}, nanos={})", self.seconds, self.nanos).to_string()
+        format!("Timestamp(sec={}, nsec={})", self.0.sec, self.0.nsec).to_string()
     }
 }
 
-impl From<Timestamp> for prost_types::Timestamp {
+impl From<Timestamp> for foxglove::schemas::Timestamp {
     fn from(value: Timestamp) -> Self {
-        Self {
-            seconds: value.seconds,
-            nanos: value.nanos,
-        }
+        value.0
     }
 }
 
 /// A duration, composed of seconds and nanoseconds
 ///
-/// :param seconds: The number of seconds in the duration.
-/// :param nanos: The number of nanoseconds in the duration.
+/// :param sec: The number of seconds in the duration.
+/// :param nsec: The number of nanoseconds in the positive direction.
 #[pyclass(module = "foxglove.schemas")]
 #[derive(Clone)]
-pub struct Duration {
-    pub seconds: u64,
-    pub nanos: u32,
-}
+pub struct Duration(pub(crate) foxglove::schemas::Duration);
 
 #[pymethods]
 impl Duration {
     #[new]
-    #[pyo3(signature = (seconds=0, nanos=None))]
-    fn new(seconds: u64, nanos: Option<u32>) -> Self {
-        Self {
-            seconds,
-            nanos: nanos.unwrap_or_default(),
-        }
+    #[pyo3(signature = (sec, nsec=None))]
+    fn new(sec: i32, nsec: Option<u32>) -> Self {
+        let nsec = nsec.unwrap_or(0);
+        Self(foxglove::schemas::Duration { sec, nsec })
     }
 
     fn __repr__(&self) -> String {
-        format!("Duration(seconds={}, nanos={})", self.seconds, self.nanos).to_string()
+        format!("Duration(sec={}, nsec={})", self.0.sec, self.0.nsec).to_string()
     }
 }
 
-impl From<Duration> for prost_types::Duration {
+impl From<Duration> for foxglove::schemas::Duration {
     fn from(value: Duration) -> Self {
-        Self {
-            seconds: value.seconds.try_into().unwrap_or_default(),
-            nanos: value.nanos.try_into().unwrap_or_default(),
-        }
+        value.0
     }
 }
 /// A primitive representing an arrow
