@@ -90,7 +90,7 @@ class ExampleListener(foxglove.ServerListener):
 
 
 def main() -> None:
-    foxglove.verbose_on(logging.DEBUG)
+    foxglove.set_log_level(logging.DEBUG)
 
     listener = ExampleListener()
 

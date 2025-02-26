@@ -19,7 +19,6 @@ from ._foxglove_py import (
     ParameterValue,
     StatusLevel,
     WebSocketServer,
-    disable_logging,
     enable_logging,
     open_mcap,
     shutdown,
@@ -163,12 +162,15 @@ def start_server(
     )
 
 
-def verbose_on(level: Union[int, str] = "INFO") -> None:
+def set_log_level(level: Union[int, str] = "INFO") -> None:
     """
     Enable SDK logging.
 
     This function will call logging.basicConfig() for convenience in scripts, but in general you
     should configure logging yourself: https://docs.python.org/3/library/logging.html
+
+    :param level: The logging level to set. This accepts the same values as `logging.setLevel` and
+        defaults to "INFO". The SDK will not log at levels "CRITICAL" or higher.
     """
     # This will raise a ValueError for invalid levels if the user has not already configured
     logging.basicConfig(level=level, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -203,13 +205,6 @@ def _level_names() -> dict[str, int]:
     }
 
 
-def verbose_off() -> None:
-    """
-    Disable SDK logging.
-    """
-    disable_logging()
-
-
 __all__ = [
     "Capability",
     "Channel",
@@ -224,6 +219,5 @@ __all__ = [
     "log",
     "open_mcap",
     "start_server",
-    "verbose_off",
-    "verbose_on",
+    "set_log_level",
 ]
