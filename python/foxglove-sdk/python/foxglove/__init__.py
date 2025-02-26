@@ -167,7 +167,8 @@ def set_log_level(level: Union[int, str] = "INFO") -> None:
     Enable SDK logging.
 
     This function will call logging.basicConfig() for convenience in scripts, but in general you
-    should configure logging yourself: https://docs.python.org/3/library/logging.html
+    should configure logging yourself before calling this function:
+    https://docs.python.org/3/library/logging.html
 
     :param level: The logging level to set. This accepts the same values as `logging.setLevel` and
         defaults to "INFO". The SDK will not log at levels "CRITICAL" or higher.
@@ -218,6 +219,6 @@ __all__ = [
     "WebSocketServer",
     "log",
     "open_mcap",
-    "start_server",
     "set_log_level",
+    "start_server",
 ]
