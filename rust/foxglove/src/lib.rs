@@ -190,6 +190,7 @@ pub use mcap_writer::{McapWriter, McapWriterHandle};
 pub use metadata::{Metadata, PartialMetadata};
 pub(crate) use runtime::get_runtime_handle;
 pub use runtime::shutdown_runtime;
+pub use schemas_wkt::{RangeError, SaturatingFrom, SaturatingInto};
 pub(crate) use time::nanoseconds_since_epoch;
 pub use websocket_server::{WebSocketServer, WebSocketServerBlockingHandle, WebSocketServerHandle};
 
@@ -233,10 +234,4 @@ pub enum FoxgloveError {
     /// An error related to MCAP encoding.
     #[error("MCAP error: {0}")]
     McapError(#[from] mcap::McapError),
-    /// [`Duration`][schemas::Duration] outside of representable range.
-    #[error("Duration out of range")]
-    DurationOutOfRange,
-    /// [`Timestamp`][schemas::Timestamp] outside of representable range.
-    #[error("Timestamp out of range")]
-    TimestampOutOfRange,
 }

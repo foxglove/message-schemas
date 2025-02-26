@@ -1,8 +1,6 @@
 use assert_matches::assert_matches;
 
-use crate::FoxgloveError;
-
-use super::{normalize, Duration, Timestamp};
+use super::{normalize, Duration, RangeError, Timestamp};
 
 #[test]
 fn test_normalize() {
@@ -50,10 +48,7 @@ fn test_duration_from_std_duration() {
 
     // seconds out of range
     let orig = std::time::Duration::from_secs(i32::MAX as u64 + 1);
-    assert_matches!(
-        Duration::try_from(orig),
-        Err(FoxgloveError::DurationOutOfRange)
-    );
+    assert_matches!(Duration::try_from(orig), Err(RangeError::UpperBound));
 }
 
 #[test]
@@ -82,17 +77,11 @@ fn test_timestamp_from_system_time() {
     let orig = std::time::UNIX_EPOCH
         .checked_sub(std::time::Duration::from_nanos(1))
         .unwrap();
-    assert_matches!(
-        Timestamp::try_from(orig),
-        Err(FoxgloveError::TimestampOutOfRange)
-    );
+    assert_matches!(Timestamp::try_from(orig), Err(RangeError::LowerBound));
 
     // too future
     let orig = std::time::UNIX_EPOCH
-        .checked_sub(std::time::Duration::from_secs(u32::MAX as u64 + 1))
+        .checked_add(std::time::Duration::from_secs(u32::MAX as u64 + 1))
         .unwrap();
-    assert_matches!(
-        Timestamp::try_from(orig),
-        Err(FoxgloveError::TimestampOutOfRange)
-    );
+    assert_matches!(Timestamp::try_from(orig), Err(RangeError::UpperBound));
 }

@@ -11,7 +11,7 @@ use clap::Parser;
 use foxglove::schemas::log::Level;
 use foxglove::schemas::Log;
 use foxglove::websocket::{Capability, Client, ClientChannelView, ServerListener};
-use foxglove::{PartialMetadata, TypedChannel, WebSocketServer};
+use foxglove::{PartialMetadata, SaturatingInto, TypedChannel, WebSocketServer};
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tokio_util::sync::CancellationToken;
@@ -68,7 +68,7 @@ async fn log_forever() {
     loop {
         interval.tick().await;
         let msg = Log {
-            timestamp: Some(SystemTime::now().try_into().expect("timestamp in range")),
+            timestamp: Some(SystemTime::now().saturating_into()),
             message: format!("It's been {:?}", start.elapsed()),
             level: Level::Info.into(),
             ..Default::default()

@@ -7,12 +7,71 @@
 //! This module lives outside crate::schemas, because everything under the schemas/ direcory is
 //! generated.
 
-use crate::FoxgloveError;
-
 #[cfg(feature = "chrono")]
 mod chrono;
 #[cfg(test)]
 mod tests;
+
+/// A conversion error indicating that the value is outside of the range of the target type.
+#[derive(Debug, thiserror::Error)]
+pub enum RangeError {
+    /// Exceeded the lower bound.
+    #[error("Exceeded lower bound")]
+    LowerBound,
+    /// Exceeded the upper bound.
+    #[error("Exceeded upper bound")]
+    UpperBound,
+}
+
+/// A saturating version of [`From`] for conversions that fail with [`RangeError`].
+pub trait SaturatingFrom<T> {
+    /// Performs the conversion.
+    fn saturating_from(value: T) -> Self;
+}
+
+impl<T> SaturatingFrom<T> for Duration
+where
+    Self: TryFrom<T, Error = RangeError>,
+{
+    fn saturating_from(value: T) -> Self {
+        match Self::try_from(value) {
+            Ok(d) => d,
+            Err(RangeError::LowerBound) => Duration::MIN,
+            Err(RangeError::UpperBound) => Duration::MAX,
+        }
+    }
+}
+
+impl<T> SaturatingFrom<T> for Timestamp
+where
+    Self: TryFrom<T, Error = RangeError>,
+{
+    fn saturating_from(value: T) -> Self {
+        match Self::try_from(value) {
+            Ok(d) => d,
+            Err(RangeError::LowerBound) => Timestamp::MIN,
+            Err(RangeError::UpperBound) => Timestamp::MAX,
+        }
+    }
+}
+
+/// A saturating version of [`Into`] for conversions that fail with [`RangeError`].
+///
+/// Library authors usually should not implement this trait, but instead prefer to implement
+/// [`SaturatingFrom`].
+pub trait SaturatingInto<T> {
+    /// Performs the conversion.
+    fn saturating_into(self) -> T;
+}
+
+impl<T, U> SaturatingInto<T> for U
+where
+    T: SaturatingFrom<U>,
+{
+    fn saturating_into(self) -> T {
+        T::saturating_from(self)
+    }
+}
 
 /// Converts time integer types and normalizes excessive nanoseconds into seconds.
 fn normalize(sec: impl Into<i64>, mut nsec: u32) -> (i64, i32) {
@@ -122,11 +181,11 @@ impl prost::Message for Duration {
 }
 
 impl TryFrom<std::time::Duration> for Duration {
-    type Error = FoxgloveError;
+    type Error = RangeError;
 
     fn try_from(duration: std::time::Duration) -> Result<Self, Self::Error> {
         let Ok(sec) = i32::try_from(duration.as_secs()) else {
-            return Err(FoxgloveError::DurationOutOfRange);
+            return Err(RangeError::UpperBound);
         };
         let nsec = duration.subsec_nanos();
         Ok(Self { sec, nsec })
@@ -223,14 +282,14 @@ impl prost::Message for Timestamp {
 }
 
 impl TryFrom<std::time::SystemTime> for Timestamp {
-    type Error = FoxgloveError;
+    type Error = RangeError;
 
     fn try_from(time: std::time::SystemTime) -> Result<Self, Self::Error> {
         let Ok(duration) = time.duration_since(std::time::UNIX_EPOCH) else {
-            return Err(FoxgloveError::TimestampOutOfRange);
+            return Err(RangeError::LowerBound);
         };
         let Ok(sec) = u32::try_from(duration.as_secs()) else {
-            return Err(FoxgloveError::TimestampOutOfRange);
+            return Err(RangeError::UpperBound);
         };
         let nsec = duration.subsec_nanos();
         Ok(Self { sec, nsec })
