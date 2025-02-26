@@ -176,3 +176,12 @@ jobs:
           package-name: foxglove_msgs
           target-ros2-distro: ${{ matrix.ros_distribution }}
           vcs-repo-file-url: ""
+
+  cpp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: make test
+        working-directory: cpp
+      - name: Ensure generated files are up to date
+        run: git diff --exit-code

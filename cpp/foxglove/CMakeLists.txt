@@ -1,41 +1,40 @@
 cmake_minimum_required(VERSION 3.25)
 project(foxglove-sdk)
 
-option(ENABLE_LTO "Enable link-time optimization" ON)
-
+include(CTest)
 include(FetchContent)
 
 FetchContent_Declare(
-  Corrosion
-  GIT_REPOSITORY https://github.com/corrosion-rs/corrosion.git
-  GIT_TAG v0.5
+  Catch2
+  GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+  GIT_TAG        v3.8.0
 )
-FetchContent_MakeAvailable(Corrosion)
+FetchContent_MakeAvailable(Catch2)
+list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
+include(Catch)
 
-# Import targets defined in a package or workspace manifest `Cargo.toml` file
-corrosion_import_crate(MANIFEST_PATH Cargo.toml CRATES foxglove_sdk_cxxbridge)
+add_library(foxglove_c STATIC IMPORTED)
+set_property(TARGET foxglove_c PROPERTY IMPORTED_LOCATION_DEBUG ${CMAKE_CURRENT_SOURCE_DIR}/../../target/debug/libfoxglove_c.a)
+set_property(TARGET foxglove_c PROPERTY IMPORTED_LOCATION_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}/../../target/release/libfoxglove_c.a)
+set_property(TARGET foxglove_c PROPERTY IMPORTED_LOCATION_RELWITHDEBINFO ${CMAKE_CURRENT_SOURCE_DIR}/../../target/release/libfoxglove_c.a)
+target_include_directories(foxglove_c INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../../c/foxglove/generated/include)
 
-corrosion_add_cxxbridge(foxglove_sdk_cxxbridge_cpp
-  CRATE foxglove_sdk_cxxbridge
-  # REGEN_TARGET <regen_target_name>
-  FILES lib.rs
+file(GLOB_RECURSE foxglove_srcs CONFIGURE_DEPENDS
+    "include/*.hpp"
+    "src/*.hpp"
+    "src/*.cpp"
 )
 
-add_library(foxglove STATIC src/dummy.cpp)
+add_library(foxglove STATIC "${foxglove_srcs}")
 set_property(TARGET foxglove PROPERTY CXX_STANDARD 20)
 set_property(TARGET foxglove PROPERTY CXX_STANDARD_REQUIRED True)
 target_include_directories(foxglove PUBLIC include)
-target_link_libraries(foxglove PRIVATE foxglove_sdk_cxxbridge_cpp)
+target_link_libraries(foxglove PRIVATE foxglove_c)
 
-# if(ENABLE_LTO)
-#   include(CheckIPOSupported)
-#   check_ipo_supported()
-#   corrosion_add_target_local_rustflags(foxglove_sdk_cxxbridge -Clinker-plugin-lto)
-#   # set_property(TARGET foxglove_sdk_cxxbridge PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
-#   # set_property(TARGET foxglove_sdk_cxxbridge_cpp PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
-#   # target_link_options(foxglove_sdk_cxxbridge INTERFACE -fuse-ld=lld)
-#   # target_link_options(foxglove_sdk_cxxbridge_cpp PRIVATE -fuse-ld=lld)
-#   set_property(TARGET foxglove PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
-#   # set_property(TARGET foxglove PROPERTY LINKER_TYPE LLD)
-#   # target_link_options(foxglove PRIVATE -fuse-ld=lld)
-# endif()
+file(GLOB_RECURSE foxglove_test_srcs CONFIGURE_DEPENDS
+    "tests/*.hpp"
+    "tests/*.cpp"
+)
+add_executable(tests "${foxglove_test_srcs}")
+target_link_libraries(tests PRIVATE foxglove Catch2::Catch2WithMain)
+catch_discover_tests(tests)

@@ -1,44 +1,40 @@
-#include <foxglove/dummy.hpp>
+#include <foxglove/server.hpp>
 
 #include <chrono>
+#include <csignal>
 #include <iostream>
 #include <memory>
+#include <thread>
+
+using namespace std::chrono_literals;
+
+static std::function<void()> sigintHandler;
 
 int main(int argc, const char* argv[]) {
-  {
-    auto t1 = std::chrono::high_resolution_clock::now();
-    uint64_t sum;
-    for (int i = 0; i < 5'000'000; i++) {
-      sum = foxglove::dummy_cpp();
-    }
-    auto t2 = std::chrono::high_resolution_clock::now();
+  std::signal(SIGINT, [](int) {
+    if (sigintHandler) sigintHandler();
+  });
 
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-
-    std::cerr << "Calling C++ dummy function: " << sum << ", time elapsed: " << duration << " ms"
-              << std::endl;
-  }
-
-  {
-    auto t1 = std::chrono::high_resolution_clock::now();
-    uint64_t sum;
-    for (int i = 0; i < 5'000'000; i++) {
-      sum = foxglove::dummy_rs();
-    }
-    auto t2 = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-
-    std::cerr << "Calling Rust dummy function: " << sum << ", time elapsed: " << duration << " ms"
-              << std::endl;
-  }
-
-  foxglove::WebSocketServerOptions options;
-  options.name = "ws-demo";
-  options.host = "127.0.0.1";
-  options.port = 8765;
-
+  foxglove::WebSocketServerOptions options{
+    .name = "ws-demo",
+    .host = "127.0.0.1",
+    .port = 8765,
+  };
   foxglove::WebSocketServer server{options};
   server.start();
+  std::cerr << "Started server" << std::endl;
 
+  std::atomic_bool done = false;
+  sigintHandler = [&] {
+    std::cerr << "Shutting down..." << std::endl;
+    server.stop();
+    done = true;
+  };
+
+  while (!done) {
+    std::this_thread::sleep_for(10ms);
+  }
+
+  std::cerr << "Done" << std::endl;
   return 0;
 }

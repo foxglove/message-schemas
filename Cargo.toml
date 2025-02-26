@@ -1,12 +1,12 @@
 [workspace]
 resolver = "2"
 members = [
+  "c/foxglove",
   "rust/foxglove",
   "rust/foxglove-proto-gen",
   "rust/examples/*",
   "rust/examples-unstable/*",
   "python/foxglove-sdk",
-  "cpp/foxglove",
 ]
 
 [workspace.dependencies]
