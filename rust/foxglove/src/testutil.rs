@@ -5,8 +5,7 @@ mod log_sink;
 
 use crate::channel::ChannelId;
 use crate::websocket::{
-    AssetResponder, ChannelView, Client, ClientChannelId, ClientChannelView, ClientId, Parameter,
-    ServerListener,
+    ChannelView, Client, ClientChannelId, ClientChannelView, ClientId, Parameter, ServerListener,
 };
 pub use log_context::GlobalContextTest;
 pub use log_sink::{ErrorSink, MockSink, RecordingSink};

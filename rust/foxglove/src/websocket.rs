@@ -918,6 +918,11 @@ impl Server {
             );
         }
 
+        // If the server was declared with fetch asset handler, automatically add the "assets" capability
+        if opts.fetch_asset_handler.is_some() {
+            capabilities.insert(Capability::Assets);
+        }
+
         Server {
             weak_self,
             started: AtomicBool::new(false),
@@ -942,7 +947,7 @@ impl Server {
                     .map(|s| (s.id(), Arc::new(s)))
                     .collect(),
             ),
-            fetch_asset_handler: None,
+            fetch_asset_handler: opts.fetch_asset_handler,
         }
     }
 
