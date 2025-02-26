@@ -36,7 +36,7 @@ use tokio_util::sync::CancellationToken;
 mod connection_graph;
 mod protocol;
 pub mod service;
-pub use connection_graph::{ConnectionGraph, MapOfSets};
+pub use connection_graph::ConnectionGraph;
 #[cfg(test)]
 mod tests;
 #[cfg(all(test, feature = "unstable"))]

@@ -4,24 +4,63 @@ use crate::websocket::protocol::server::{
 use std::collections::{HashMap, HashSet};
 
 /// A HashMap where the keys are the topic or service name and the value is a set of string ids.
-pub type MapOfSets = HashMap<String, HashSet<String>>;
+type MapOfSets = HashMap<String, HashSet<String>>;
 
 /// The connection graph data. Requires capability [`Capability::ConnectionGraph`].
 /// See https://github.com/foxglove/ws-protocol/blob/main/docs/spec.md#connection-graph-update
 #[derive(Debug, Default, Clone)]
 pub struct ConnectionGraph {
     /// A map of active topic names to the set of string publisher ids.
-    pub published_topics: MapOfSets,
+    published_topics: MapOfSets,
     /// A map of active topic names to the set of string subscriber ids.
-    pub subscribed_topics: MapOfSets,
+    subscribed_topics: MapOfSets,
     /// A map of active service names to the set of string provider ids.
-    pub advertised_services: MapOfSets,
+    advertised_services: MapOfSets,
 }
 
 impl ConnectionGraph {
     /// Create a new, empty connection graph.
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Set a published topic and its associated publisher ids.
+    /// Overwrites any existing topic with the same name.
+    pub fn set_published_topic(
+        &mut self,
+        topic: impl Into<String>,
+        publisher_ids: impl IntoIterator<Item = impl Into<String>>,
+    ) {
+        self.published_topics.insert(
+            topic.into(),
+            HashSet::from_iter(publisher_ids.into_iter().map(|id| id.into())),
+        );
+    }
+
+    /// Set a subscribed topic and its associated subscriber ids.
+    /// Overwrites any existing topic with the same name.
+    pub fn set_subscribed_topic(
+        &mut self,
+        topic: impl Into<String>,
+        subscriber_ids: impl IntoIterator<Item = impl Into<String>>,
+    ) {
+        self.subscribed_topics.insert(
+            topic.into(),
+            HashSet::from_iter(subscriber_ids.into_iter().map(|id| id.into())),
+        );
+    }
+
+    /// Set an advertised service and its associated provider ids.
+    /// Overwrites any existing service with the same name.
+    pub fn set_advertised_service(
+        &mut self,
+        service: impl Into<String>,
+        provider_ids: impl IntoIterator<Item = impl Into<String>>,
+    ) {
+        self.advertised_services.insert(
+            service.into(),
+            HashSet::from_iter(provider_ids.into_iter().map(|id| id.into())),
+        );
     }
 
     /// Replace self with replacement_graph, computing the difference and returning it as JSON

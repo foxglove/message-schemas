@@ -1282,15 +1282,9 @@ async fn test_update_connection_graph() {
         .expect("Failed to start server");
 
     let mut initial_graph = ConnectionGraph::new();
-    initial_graph
-        .published_topics
-        .insert("topic1".to_string(), collection!["publisher1".to_string()]);
-    initial_graph
-        .subscribed_topics
-        .insert("topic1".to_string(), collection!["subscriber1".to_string()]);
-    initial_graph
-        .advertised_services
-        .insert("service1".to_string(), collection!["provider1".to_string()]);
+    initial_graph.set_published_topic("topic1", ["publisher1".to_string()]);
+    initial_graph.set_subscribed_topic("topic1", ["subscriber1".to_string()]);
+    initial_graph.set_advertised_service("service1", ["provider1".to_string()]);
     server
         .replace_connection_graph(initial_graph)
         .expect("failed to update connection graph");
@@ -1329,13 +1323,9 @@ async fn test_update_connection_graph() {
 
     let mut graph = ConnectionGraph::new();
     // Update publisher for topic1
-    graph
-        .published_topics
-        .insert("topic1".to_string(), collection!["publisher2".to_string()]);
+    graph.set_published_topic("topic1", ["publisher2".to_string()]);
     // Add topic2, remove topic1
-    graph
-        .subscribed_topics
-        .insert("topic2".to_string(), collection!["subscriber2".to_string()]);
+    graph.set_subscribed_topic("topic2", ["subscriber2".to_string()]);
     // Delete service1
     server
         .replace_connection_graph(graph)
