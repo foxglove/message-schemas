@@ -63,7 +63,7 @@ jobs:
         run: git diff --exit-code
 
       - name: Build C++ library and run tests
-        if: ${{ !matrix.cross }}
+        if: ${{ !fromJson(matrix.cross) }}
         run: make test
         working-directory: cpp
 
