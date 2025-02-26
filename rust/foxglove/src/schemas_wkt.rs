@@ -107,13 +107,44 @@ fn normalize(sec: impl Into<i64>, mut nsec: u32) -> (i64, i32) {
 ///     sec: -4,
 ///     nsec: 858_407_346,
 /// };
+/// ```
 ///
-/// // Positive durations can be derived from std::time::Duration.
-/// let duration = std::time::Duration::from_micros(577_215);
+/// Various conversions are implemented. These conversions may fail with [`RangeError`], because
+/// [`Duration`] represents a more restrictive range of values.
 ///
-/// // When built with the `chrono` feature, durations can also be derived from chrono::TimeDelta.
+/// ```
+/// # use foxglove::schemas::Duration;
+/// let duration: Duration = std::time::Duration::from_micros(577_215).try_into().unwrap();
+/// assert_eq!(
+///     duration,
+///     Duration {
+///         sec: 0,
+///         nsec: 577_215_000
+///     }
+/// );
+///
 /// #[cfg(feature = "chrono")]
-/// let duration = chrono::TimeDelta::microseconds(1_414_213);
+/// {
+///     let duration: Duration = chrono::TimeDelta::microseconds(1_414_213).try_into().unwrap();
+///     assert_eq!(
+///         duration,
+///         Duration {
+///             sec: 1,
+///             nsec: 414_213_000
+///         }
+///     );
+/// }
+/// ```
+///
+/// The [`SaturatingFrom`] and [`SaturatingInto`] traits may be used to saturate when the range is
+/// exceeded.
+///
+/// ```
+/// # use foxglove::schemas::Duration;
+/// use foxglove::SaturatingInto;
+///
+/// let duration: Duration = std::time::Duration::from_secs(u64::MAX).saturating_into();
+/// assert_eq!(duration, Duration::MAX);
 /// ```
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct Duration {
@@ -127,7 +158,7 @@ impl Duration {
     /// Maximum representable duration.
     pub const MAX: Self = Self {
         sec: i32::MAX,
-        nsec: u32::MAX,
+        nsec: 999_999_999,
     };
 
     /// Minimum representable duration.
@@ -192,32 +223,49 @@ impl TryFrom<std::time::Duration> for Duration {
     }
 }
 
-/// A timestamp, represented as an offset from the unix epoch.
-///
-/// Timestamps before 1970-01-01T00:00:00Z, or after 2106-02-06T22:28:15Z are not representable.
+/// A timestamp, represented as an offset from a user-defined epoch.
 ///
 /// # Example
 ///
 /// ```
 /// use foxglove::schemas::Timestamp;
 ///
-/// // A timestamp can be constructed manually.
 /// let timestamp = Timestamp {
 ///     sec: 1_548_054_420,
 ///     nsec: 76_657_283,
 /// };
+/// ```
 ///
-/// // A timestamp can also be derived from system time. If the timestamp is outside of
-/// // the representable range, this will fail with FoxgloveError::TimestampOutOfRange.
-/// let timestamp = Timestamp::try_from(std::time::SystemTime::now()).unwrap();
+/// Various conversions are implemented, which presume the choice of the unix epoch as the
+/// reference time. These conversions may fail with [`RangeError`], because [`Timestamp`]
+/// represents a more restrictive range of values.
 ///
-/// // When built with the `chrono` feature, durations can also be derived from
-/// // chrono::DateTime<chrono::Utc> and chrono::NaiveDateTime.
+/// ```
+/// # use foxglove::schemas::Timestamp;
+/// let timestamp = Timestamp::try_from(std::time::SystemTime::UNIX_EPOCH).unwrap();
+/// assert_eq!(timestamp, Timestamp::MIN);
+///
 /// #[cfg(feature = "chrono")]
 /// {
 ///     let timestamp = Timestamp::try_from(chrono::DateTime::UNIX_EPOCH).unwrap();
+///     assert_eq!(timestamp, Timestamp::MIN);
 ///     let timestamp = Timestamp::try_from(chrono::NaiveDateTime::UNIX_EPOCH).unwrap();
+///     assert_eq!(timestamp, Timestamp::MIN);
 /// }
+/// ```
+///
+/// The [`SaturatingFrom`] and [`SaturatingInto`] traits may be used to saturate when the range is
+/// exceeded.
+///
+/// ```
+/// # use foxglove::schemas::Timestamp;
+/// use foxglove::SaturatingInto;
+///
+/// let timestamp: Timestamp = std::time::SystemTime::UNIX_EPOCH
+///     .checked_sub(std::time::Duration::from_secs(1))
+///     .unwrap()
+///     .saturating_into();
+/// assert_eq!(timestamp, Timestamp::MIN);
 /// ```
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct Timestamp {
@@ -231,7 +279,7 @@ impl Timestamp {
     /// Maximum representable timestamp.
     pub const MAX: Self = Self {
         sec: u32::MAX,
-        nsec: u32::MAX,
+        nsec: 999_999_999,
     };
 
     /// Minimum representable timestamp.
