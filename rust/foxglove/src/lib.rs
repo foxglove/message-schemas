@@ -235,3 +235,9 @@ pub enum FoxgloveError {
     #[error("MCAP error: {0}")]
     McapError(#[from] mcap::McapError),
 }
+
+impl From<convert::RangeError> for FoxgloveError {
+    fn from(err: convert::RangeError) -> Self {
+        FoxgloveError::Unspecified(err.into())
+    }
+}
