@@ -14,9 +14,15 @@ list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 include(Catch)
 
 add_library(foxglove_c STATIC IMPORTED)
-set_property(TARGET foxglove_c PROPERTY IMPORTED_LOCATION_DEBUG ${CMAKE_CURRENT_SOURCE_DIR}/../../target/debug/libfoxglove_c.a)
-set_property(TARGET foxglove_c PROPERTY IMPORTED_LOCATION_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}/../../target/release/libfoxglove_c.a)
-set_property(TARGET foxglove_c PROPERTY IMPORTED_LOCATION_RELWITHDEBINFO ${CMAKE_CURRENT_SOURCE_DIR}/../../target/release/libfoxglove_c.a)
+if(WIN32)
+  set_property(TARGET foxglove_c PROPERTY IMPORTED_LOCATION_DEBUG ${CMAKE_CURRENT_SOURCE_DIR}/../../target/debug/foxglove_c.lib)
+  set_property(TARGET foxglove_c PROPERTY IMPORTED_LOCATION_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}/../../target/release/foxglove_c.lib)
+  set_property(TARGET foxglove_c PROPERTY IMPORTED_LOCATION_RELWITHDEBINFO ${CMAKE_CURRENT_SOURCE_DIR}/../../target/release/foxglove_c.lib)
+else()
+  set_property(TARGET foxglove_c PROPERTY IMPORTED_LOCATION_DEBUG ${CMAKE_CURRENT_SOURCE_DIR}/../../target/debug/libfoxglove_c.a)
+  set_property(TARGET foxglove_c PROPERTY IMPORTED_LOCATION_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}/../../target/release/libfoxglove_c.a)
+  set_property(TARGET foxglove_c PROPERTY IMPORTED_LOCATION_RELWITHDEBINFO ${CMAKE_CURRENT_SOURCE_DIR}/../../target/release/libfoxglove_c.a)
+endif()
 target_include_directories(foxglove_c INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../../c/foxglove/generated/include)
 
 file(GLOB_RECURSE foxglove_srcs CONFIGURE_DEPENDS
