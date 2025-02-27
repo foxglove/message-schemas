@@ -1,11 +1,8 @@
-use std::{future::Future, sync::Arc};
+use std::{fmt::Display, future::Future, sync::Arc};
 
 use bytes::Bytes;
 
 use super::{Client, SemaphoreGuard};
-
-/// The result of a fetch asset request.
-pub type FetchAssetResult = Result<Bytes, String>;
 
 /// A handler to respond to fetch asset requests.
 ///
@@ -19,31 +16,33 @@ pub trait AssetHandler: Send + Sync + 'static {
 
 pub(crate) struct BlockingAssetHandlerFn<F>(pub Arc<F>);
 
-impl<F> AssetHandler for BlockingAssetHandlerFn<F>
+impl<F, Err> AssetHandler for BlockingAssetHandlerFn<F>
 where
-    F: Fn(Client, String) -> FetchAssetResult + Send + Sync + 'static,
+    F: Fn(Client, String) -> Result<Bytes, Err> + Send + Sync + 'static,
+    Err: Display,
 {
     fn fetch(&self, uri: String, responder: AssetResponder) {
         let func = self.0.clone();
         tokio::task::spawn_blocking(move || {
             let result = (func)(responder.client(), uri);
-            responder.respond(result);
+            responder.respond(result.map_err(|e| e.to_string()));
         });
     }
 }
 
 pub(crate) struct AsyncAssetHandlerFn<F>(pub Arc<F>);
 
-impl<F, Fut> AssetHandler for AsyncAssetHandlerFn<F>
+impl<F, Fut, Err> AssetHandler for AsyncAssetHandlerFn<F>
 where
     F: Fn(Client, String) -> Fut + Send + Sync + 'static,
-    Fut: Future<Output = FetchAssetResult> + Send + 'static,
+    Fut: Future<Output = Result<Bytes, Err>> + Send + 'static,
+    Err: Display,
 {
     fn fetch(&self, uri: String, responder: AssetResponder) {
         let func = self.0.clone();
         tokio::spawn(async move {
             let result = (func)(responder.client(), uri).await;
-            responder.respond(result);
+            responder.respond(result.map_err(|e| e.to_string()));
         });
     }
 }
@@ -73,7 +72,7 @@ impl AssetResponder {
     }
 
     /// Send an response to the client.
-    pub fn respond(self, result: FetchAssetResult) {
+    pub fn respond(self, result: Result<Bytes, String>) {
         self.client.send_asset_response(result, self.request_id);
     }
 }

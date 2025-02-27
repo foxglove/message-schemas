@@ -10,7 +10,7 @@ pub use crate::websocket::protocol::server::{
 };
 use crate::{get_runtime_handle, Channel, FoxgloveError, LogSink, Metadata};
 use bimap::BiHashMap;
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, Bytes, BytesMut};
 use flume::TrySendError;
 use futures_util::{stream::SplitSink, SinkExt, StreamExt};
 use serde::Serialize;
@@ -34,7 +34,7 @@ use tokio_tungstenite::{
 use tokio_util::sync::CancellationToken;
 
 mod fetch_asset;
-pub use fetch_asset::{AssetHandler, AssetResponder, FetchAssetResult};
+pub use fetch_asset::{AssetHandler, AssetResponder};
 pub(crate) use fetch_asset::{AsyncAssetHandlerFn, BlockingAssetHandlerFn};
 mod connection_graph;
 mod protocol;
@@ -110,7 +110,7 @@ impl Client {
     }
 
     /// Send a fetch asset response to the client. Does nothing if client is disconnected.
-    pub(crate) fn send_asset_response(&self, result: FetchAssetResult, request_id: u32) {
+    pub(crate) fn send_asset_response(&self, result: Result<Bytes, String>, request_id: u32) {
         if let Some(client) = self.client.upgrade() {
             match result {
                 Ok(asset) => client.send_asset_response(&asset, request_id),
