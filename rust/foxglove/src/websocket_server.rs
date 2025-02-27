@@ -4,7 +4,9 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 use crate::websocket::service::Service;
-use crate::websocket::{create_server, Capability, ConnectionGraph, Parameter, Server, ServerOptions, Status};
+use crate::websocket::{
+    create_server, Capability, ConnectionGraph, Parameter, Server, ServerOptions, Status,
+};
 use crate::{get_runtime_handle, FoxgloveError, LogContext, LogSink};
 use tokio::runtime::Handle;
 use tracing::warn;
