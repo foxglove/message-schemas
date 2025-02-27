@@ -24,7 +24,6 @@ if(${ROS_VERSION} EQUAL 1)
   file(REMOVE_RECURSE msg)
   file(COPY
     ${_generated_ros1_schemas}
-    ImageMarkerArray.msg
     DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/msg"
   )
 
@@ -69,7 +68,6 @@ elseif(${ROS_VERSION} EQUAL 2)
   file(REMOVE_RECURSE msg)
   file(COPY
     ${_generated_ros2_schemas}
-    ImageMarkerArray.msg
     DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/msg"
   )
 
