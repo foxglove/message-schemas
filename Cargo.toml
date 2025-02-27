@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+  "c",
   "rust/foxglove",
   "rust/foxglove-proto-gen",
   "rust/examples/*",

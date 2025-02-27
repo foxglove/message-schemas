@@ -393,6 +393,36 @@ impl PyWebSocketServer {
             server.publish_parameter_values(parameters.into_iter().map(Into::into).collect());
         }
     }
+
+    /// Advertises support for the provided services.
+    ///
+    /// These services will be available for clients to use until they are removed with
+    /// :py:meth:`remove_services`.
+    ///
+    /// This method will fail if the server was not configured with :py:attr:`Capability.Services`.
+    ///
+    /// :param services: Services to add.
+    /// :type services: list[:py:class:`Service`]
+    pub fn add_services(&self, py: Python<'_>, services: Vec<PyService>) -> PyResult<()> {
+        if let Some(server) = &self.0 {
+            py.allow_threads(move || {
+                server
+                    .add_services(services.into_iter().map(|s| s.into()))
+                    .map_err(PyFoxgloveError::from)
+            })?;
+        }
+        Ok(())
+    }
+
+    /// Removes services that were previously advertised.
+    ///
+    /// :param names: Names of services to remove.
+    /// :type names: list[str]
+    pub fn remove_services(&self, py: Python<'_>, names: Vec<String>) {
+        if let Some(server) = &self.0 {
+            py.allow_threads(move || server.remove_services(names));
+        }
+    }
 }
 
 /// The level of a :py:class:`Status` message
@@ -518,21 +548,26 @@ impl PyRequest {
 }
 
 /// A service schema.
+///
+/// :param name: The name of the service.
+/// :type name: str
+/// :param request: The request schema.
+/// :type request: :py:class:`MessageSchema` | `None`
+/// :param response: The response schema.
+/// :type response: :py:class:`MessageSchema` | `None`
 #[pyclass(name = "ServiceSchema", module = "foxglove", get_all, set_all)]
 #[derive(Clone)]
 pub struct PyServiceSchema {
+    /// The name of the service.
     name: String,
+    /// The request schema.
     request: Option<PyMessageSchema>,
+    /// The response schema.
     response: Option<PyMessageSchema>,
 }
 
 #[pymethods]
 impl PyServiceSchema {
-    /// Create a new service schema.
-    ///
-    /// :param name: The name of the service.
-    /// :param request: The request schema.
-    /// :param response: The response schema.
     #[new]
     #[pyo3(signature = (name, *, request=None, response=None))]
     fn new(
@@ -562,19 +597,22 @@ impl From<PyServiceSchema> for foxglove::websocket::service::ServiceSchema {
 }
 
 /// A service request or response schema.
+///
+/// :param encoding: The encoding of the message.
+/// :type encoding: str
+/// :param schema: The message schema.
+/// :type schema: :py:class:`Schema`
 #[pyclass(name = "MessageSchema", module = "foxglove", get_all, set_all)]
 #[derive(Clone)]
 pub struct PyMessageSchema {
+    /// The encoding of the message.
     encoding: String,
+    /// The message schema.
     schema: PySchema,
 }
 
 #[pymethods]
 impl PyMessageSchema {
-    /// Create a new message schema.
-    ///
-    /// :param encoding: The encoding of the message.
-    /// :param schema: The schema.
     #[new]
     #[pyo3(signature = (*, encoding, schema))]
     fn new(encoding: &str, schema: PySchema) -> Self {
@@ -586,21 +624,26 @@ impl PyMessageSchema {
 }
 
 /// A Schema is a description of the data format of messages or service calls.
+///
+/// :param name: The name of the schema.
+/// :type name: str
+/// :param encoding: The encoding of the schema.
+/// :type encoding: str
+/// :param data: Schema data.
+/// :type data: bytes
 #[pyclass(name = "Schema", module = "foxglove", get_all, set_all)]
 #[derive(Clone)]
 pub struct PySchema {
+    /// The name of the schema.
     name: String,
+    /// The encoding of the schema.
     encoding: String,
+    /// Schema data.
     data: Vec<u8>,
 }
 
 #[pymethods]
 impl PySchema {
-    /// Create a new schema.
-    ///
-    /// :param name: The name of the schema.
-    /// :param encoding: The encoding of the schema.
-    /// :param data: Schema data, as `bytes`
     #[new]
     #[pyo3(signature = (*, name, encoding, data))]
     fn new(name: &str, encoding: &str, data: Vec<u8>) -> Self {
