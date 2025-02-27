@@ -99,7 +99,7 @@ impl CameraCalibrationChannel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed CameraCalibrationChannel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed CameraCalibrationChannel");
         }
     }
 
@@ -164,7 +164,7 @@ impl CircleAnnotationChannel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed CircleAnnotationChannel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed CircleAnnotationChannel");
         }
     }
 
@@ -229,7 +229,7 @@ impl ColorChannel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed ColorChannel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed ColorChannel");
         }
     }
 
@@ -294,7 +294,7 @@ impl CompressedImageChannel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed CompressedImageChannel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed CompressedImageChannel");
         }
     }
 
@@ -359,7 +359,7 @@ impl CompressedVideoChannel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed CompressedVideoChannel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed CompressedVideoChannel");
         }
     }
 
@@ -424,7 +424,7 @@ impl FrameTransformChannel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed FrameTransformChannel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed FrameTransformChannel");
         }
     }
 
@@ -489,7 +489,7 @@ impl FrameTransformsChannel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed FrameTransformsChannel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed FrameTransformsChannel");
         }
     }
 
@@ -554,7 +554,7 @@ impl GeoJsonChannel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed GeoJsonChannel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed GeoJsonChannel");
         }
     }
 
@@ -619,7 +619,7 @@ impl GridChannel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed GridChannel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed GridChannel");
         }
     }
 
@@ -684,7 +684,7 @@ impl ImageAnnotationsChannel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed ImageAnnotationsChannel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed ImageAnnotationsChannel");
         }
     }
 
@@ -749,7 +749,7 @@ impl KeyValuePairChannel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed KeyValuePairChannel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed KeyValuePairChannel");
         }
     }
 
@@ -814,7 +814,7 @@ impl LaserScanChannel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed LaserScanChannel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed LaserScanChannel");
         }
     }
 
@@ -879,7 +879,7 @@ impl LocationFixChannel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed LocationFixChannel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed LocationFixChannel");
         }
     }
 
@@ -944,7 +944,7 @@ impl LogChannel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed LogChannel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed LogChannel");
         }
     }
 
@@ -1009,7 +1009,7 @@ impl SceneEntityDeletionChannel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed SceneEntityDeletionChannel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed SceneEntityDeletionChannel");
         }
     }
 
@@ -1074,7 +1074,7 @@ impl SceneEntityChannel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed SceneEntityChannel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed SceneEntityChannel");
         }
     }
 
@@ -1139,7 +1139,7 @@ impl SceneUpdateChannel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed SceneUpdateChannel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed SceneUpdateChannel");
         }
     }
 
@@ -1204,7 +1204,7 @@ impl PackedElementFieldChannel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed PackedElementFieldChannel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed PackedElementFieldChannel");
         }
     }
 
@@ -1269,7 +1269,7 @@ impl Point2Channel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed Point2Channel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed Point2Channel");
         }
     }
 
@@ -1334,7 +1334,7 @@ impl Point3Channel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed Point3Channel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed Point3Channel");
         }
     }
 
@@ -1399,7 +1399,7 @@ impl PointCloudChannel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed PointCloudChannel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed PointCloudChannel");
         }
     }
 
@@ -1464,7 +1464,7 @@ impl PointsAnnotationChannel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed PointsAnnotationChannel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed PointsAnnotationChannel");
         }
     }
 
@@ -1529,7 +1529,7 @@ impl PoseChannel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed PoseChannel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed PoseChannel");
         }
     }
 
@@ -1594,7 +1594,7 @@ impl PoseInFrameChannel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed PoseInFrameChannel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed PoseInFrameChannel");
         }
     }
 
@@ -1659,7 +1659,7 @@ impl PosesInFrameChannel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed PosesInFrameChannel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed PosesInFrameChannel");
         }
     }
 
@@ -1724,7 +1724,7 @@ impl QuaternionChannel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed QuaternionChannel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed QuaternionChannel");
         }
     }
 
@@ -1789,7 +1789,7 @@ impl RawImageChannel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed RawImageChannel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed RawImageChannel");
         }
     }
 
@@ -1854,7 +1854,7 @@ impl TextAnnotationChannel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed TextAnnotationChannel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed TextAnnotationChannel");
         }
     }
 
@@ -1919,7 +1919,7 @@ impl Vector2Channel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed Vector2Channel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed Vector2Channel");
         }
     }
 
@@ -1984,7 +1984,7 @@ impl Vector3Channel {
         if let Some(channel) = &self.0 {
             channel.log_with_meta(&msg.0, metadata);
         } else {
-            tracing::debug!("Cannot log() on a closed Vector3Channel");
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed Vector3Channel");
         }
     }
 

@@ -673,7 +673,7 @@ impl ${channelClass} {
         if let Some(channel) = &self.0 {
           channel.log_with_meta(&msg.0, metadata);
         } else {
-          tracing::debug!("Cannot log() on a closed ${channelClass}");
+          tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed ${channelClass}");
         }
     }
 
