@@ -1314,17 +1314,22 @@ async fn test_fetch_asset() {
     let data = msg.into_data();
     println!("data: {:?}", data);
     assert_eq!(data[0], 0x04); // fetch asset opcode
-    assert_eq!(u32::from_le_bytes(data[1..=4].try_into().unwrap()), 1);
+    assert_eq!(u32::from_le_bytes(data[1..5].try_into().unwrap()), 1);
     assert_eq!(data[5], 0); // 0 for success
-    assert_eq!(&data[6..], b"test data");
+    assert_eq!(u32::from_le_bytes(data[6..10].try_into().unwrap()), 0);
+    assert_eq!(&data[10..], b"test data");
 
     let result = ws_client.next().await.unwrap();
     let msg = result.expect("Failed to parse message");
     let data = msg.into_data();
     assert_eq!(data[0], 0x04); // fetch asset opcode
-    assert_eq!(u32::from_le_bytes(data[1..=4].try_into().unwrap()), 2);
+    assert_eq!(u32::from_le_bytes(data[1..5].try_into().unwrap()), 2);
     assert_eq!(data[5], 1); // 1 for error
-    assert_eq!(&data[6..], b"test error");
+    assert_eq!(
+        u32::from_le_bytes(data[6..10].try_into().unwrap()),
+        b"test error".len() as u32
+    );
+    assert_eq!(&data[10..], b"test error");
 }
 
 /// Connect to a server, ensuring the protocol header is set, and return the client WS stream
