@@ -25,6 +25,10 @@ FetchContent_MakeAvailable(Corrosion)
 
 corrosion_import_crate(MANIFEST_PATH ../c/Cargo.toml CRATES foxglove_c)
 
+if(WIN32)
+target_link_libraries(foxglove_c-static PUBLIC Bcrypt)
+endif()
+
 
 ### C++
 

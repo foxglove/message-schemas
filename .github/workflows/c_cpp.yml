@@ -73,7 +73,10 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           target: ${{ matrix.target }}
+
       - run: sudo apt-get install gcc-aarch64-linux-gnu
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+      - run: echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
         if: matrix.target == 'aarch64-unknown-linux-gnu'
 
       - name: Build C library for ${{ matrix.target }}
