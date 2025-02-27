@@ -3,7 +3,7 @@ all: build
 
 .PHONY: lint
 lint:
-	find . -path ./build -prune -name '*.h' -o -name '*.hpp' -o -name '*.cpp' | xargs clang-format --dry-run -Werror
+	find . -path ./build -prune -name '*.h' -o -name '*.hpp' -o -name '*.cpp' | xargs clang-format --dry-run -Werror --color=1
 
 .PHONY: clean
 clean:
