@@ -12,11 +12,11 @@
 #[doc(hidden)]
 #[macro_export]
 macro_rules! collection {
-    ($($k:expr => $v:expr),* $(,)?) => {{
+    ($($k:expr_2021 => $v:expr_2021),* $(,)?) => {{
         use std::iter::{Iterator, IntoIterator};
         Iterator::collect(IntoIterator::into_iter([$(($k, $v),)*]))
     }};
-    ($($v:expr),* $(,)?) => {{
+    ($($v:expr_2021),* $(,)?) => {{
         use std::iter::{Iterator, IntoIterator};
         Iterator::collect(IntoIterator::into_iter([$($v,)*]))
     }};

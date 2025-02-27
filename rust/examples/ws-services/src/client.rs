@@ -41,10 +41,13 @@ pub async fn main(config: Config) -> Result<()> {
     for id in 0..50 {
         let client = client.clone();
         sleepers.spawn(async move {
-            if let Err(e) = client.call_sleep().await {
-                error!("{id} failed to sleep: {e}");
-            } else {
-                info!("{id} is awake");
+            match client.call_sleep().await {
+                Err(e) => {
+                    error!("{id} failed to sleep: {e}");
+                }
+                _ => {
+                    info!("{id} is awake");
+                }
             }
         });
     }
@@ -220,10 +223,13 @@ impl State {
         for service in msg.services {
             let name = service.name;
             let id = service.id;
-            if let Some(prev_id) = inner.services.insert(name.clone(), id) {
-                info!("Updated service {} id ({} -> {})", name, prev_id, id);
-            } else {
-                info!("Added service {} ({})", name, id);
+            match inner.services.insert(name.clone(), id) {
+                Some(prev_id) => {
+                    info!("Updated service {} id ({} -> {})", name, prev_id, id);
+                }
+                _ => {
+                    info!("Added service {} ({})", name, id);
+                }
             }
         }
     }
@@ -277,10 +283,13 @@ impl State {
     /// Completes a service call by sending the result on the response channel.
     fn complete_service_call(&self, call_id: u32, result: Result<Bytes>) {
         let mut inner = self.0.write();
-        if let Some(tx) = inner.service_calls.remove(&call_id) {
-            let _ = tx.send(result);
-        } else {
-            error!("unexpected callback for {call_id}");
+        match inner.service_calls.remove(&call_id) {
+            Some(tx) => {
+                let _ = tx.send(result);
+            }
+            _ => {
+                error!("unexpected callback for {call_id}");
+            }
         }
     }
 }
