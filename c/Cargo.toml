@@ -5,7 +5,7 @@ edition = "2021"
 publish = false
 
 [lib]
-name = "foxglove_c"
+name = "foxglove"
 crate-type = ["staticlib", "cdylib"]
 
 [dependencies]

@@ -6,8 +6,8 @@
  */
 
 
-#ifndef FOXGLOVE_C_H
-#define FOXGLOVE_C_H
+#ifndef FOXGLOVE_H
+#define FOXGLOVE_H
 
 #include <stdarg.h>
 #include <stdbool.h>
@@ -46,4 +46,4 @@ void foxglove_server_stop(struct foxglove_websocket_server *server);
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif  /* FOXGLOVE_C_H */
+#endif  /* FOXGLOVE_H */

@@ -1,3 +1,8 @@
+# This CMake file is used for CI, examples, and tests. It builds the whole project from scratch
+# including the Rust code. If you would like to use the C++ library only, you only need to compile
+# the sources under `cpp/foxglove`, link with the C static or shared library, and add both the C/C++
+# includes to include paths.
+
 cmake_minimum_required(VERSION 3.25)
 project(foxglove-sdk)
 
@@ -26,7 +31,7 @@ FetchContent_MakeAvailable(Corrosion)
 corrosion_import_crate(MANIFEST_PATH ../c/Cargo.toml CRATES foxglove_c)
 
 if(WIN32)
-  target_link_libraries(foxglove_c-static INTERFACE Bcrypt)
+  target_link_libraries(foxglove-static INTERFACE Bcrypt)
 endif()
 
 
@@ -46,9 +51,9 @@ target_include_directories(foxglove_cpp_obj PUBLIC foxglove/include ${CMAKE_CURR
 add_library(foxglove_cpp_static STATIC)
 add_library(foxglove_cpp_shared SHARED)
 target_link_libraries(foxglove_cpp_static PUBLIC foxglove_cpp_obj)
-target_link_libraries(foxglove_cpp_static PRIVATE foxglove_c-static)
+target_link_libraries(foxglove_cpp_static PRIVATE foxglove-static)
 target_link_libraries(foxglove_cpp_shared PUBLIC foxglove_cpp_obj)
-target_link_libraries(foxglove_cpp_shared PRIVATE foxglove_c-shared)
+target_link_libraries(foxglove_cpp_shared PRIVATE foxglove-shared)
 
 
 ### Tests
