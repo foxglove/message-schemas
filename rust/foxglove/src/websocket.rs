@@ -896,14 +896,13 @@ impl ConnectedClient {
 
     /// Send an ad hoc error status message to the client, with the given message.
     fn send_error(&self, message: String) {
-        tracing::debug!("{}", message);
+        tracing::debug!("Sending error to client {}: {}", self.addr, message);
         self.send_status(Status::new(StatusLevel::Error, message));
     }
 
     /// Send an ad hoc warning status message to the client, with the given message.
-    #[allow(dead_code)]
     fn send_warning(&self, message: String) {
-        tracing::debug!("{}", message);
+        tracing::debug!("Sending warning to client {}: {}", self.addr, message);
         self.send_status(Status::new(StatusLevel::Warning, message));
     }
 
