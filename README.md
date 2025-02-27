@@ -1,6 +1,21 @@
 # Foxglove SDK
 
-This repo provides libraries and schemas to log and visualize multimodal data with [Foxglove](https://foxglove.dev).
+The Foxglove SDK allows you to log and visualize multimodal data with [Foxglove](https://foxglove.dev).
+
+> [!IMPORTANT]
+>
+> **This new Foxglove SDK is under active development.**
+>
+> It is ready for beta testing, but it is not yet fully documented and the API is subject to change.
+> Please provide feedback via [Discord](https://foxglove.dev/chat) or [GitHub Discussions](https://github.com/orgs/foxglove/discussions).
+>
+> For stable libraries, see the existing [ws-protocol](https://github.com/foxglove/ws-protocol) or [ros-foxglove-bridge](https://github.com/foxglove/ros-foxglove-bridge) repos.
+
+The new SDK is written in Rust, with bindings and packages available for Python (C, C++, and ROS coming soon).
+
+- Visualize live data using the Foxglove WebSocket protocol
+- Log data to [MCAP](https://mcap.dev/) files for later visualization or analysis
+- Leverage built-in [Foxglove schemas](https://docs.foxglove.dev/docs/visualization/message-schemas/introduction) for common visualizations, or your own custom messages using a supported serialization format
 
 Visit [Foxglove Docs](https://docs.foxglove.dev/) to get started.
 
@@ -11,56 +26,44 @@ Visit [Foxglove Docs](https://docs.foxglove.dev/) to get started.
 <tr><th>Package</th><th>Version</th><th>Description</th></tr>
 </thead>
 <tbody>
+
 <tr><td><strong>Python</strong></td><td></td><td></td></tr>
 <tr>
-<td>foxglove-schemas-flatbuffer</td>
 <td>
 
-[![pypi version](https://shields.io/pypi/v/foxglove-schemas-flatbuffer)](https://pypi.org/project/foxglove-schemas-flatbuffer/)
+[foxglove-sdk](./python/foxglove-sdk/)
 
 </td>
-<td>Compiled flatbuffers</td>
+<td>
+
+[![pypi version](https://shields.io/pypi/v/foxglove-sdk)](https://pypi.org/project/foxglove-sdk/)
+
+</td>
+<td>Foxglove SDK for Python</td>
 </tr>
+
+<tr><td><strong>Rust</strong></td><td></td><td></td></tr>
 <tr>
-<td>foxglove-schemas-protobuf</td>
 <td>
 
-[![pypi version](https://shields.io/pypi/v/foxglove-schemas-protobuf)](https://pypi.org/project/foxglove-schemas-protobuf/)
+[foxglove](./rust/foxglove)
 
 </td>
-<td>Compiled protocol buffers</td>
+<td>
+
+[![conan version](https://img.shields.io/crates/v/foxglove)](https://crates.io/crates/foxglove)
+
+</td>
+<td>Foxglove SDK for Rust</td>
 </tr>
-<tr>
-<td>foxglove-websocket</td>
-<td>
 
-[![pypi version](https://shields.io/pypi/v/foxglove-websocket)](https://pypi.org/project/foxglove-websocket/)
-
-</td>
-<td>
-
-Python implementation of the WebSocket protocol<br/>Repo: [foxglove/ws-protocol](https://github.com/foxglove/ws-protocol/tree/main/python)
-
-</td>
-</tr>
-<tr><td><strong>C++</strong></td><td></td><td></td></tr>
-<tr>
-<td>foxglove-websocket</td>
-<td>
-
-[![conan version](https://img.shields.io/conan/v/foxglove-websocket)](https://conan.io/center/recipes/foxglove-websocket)
-
-</td>
-<td>
-
-C++ implementation of the WebSocket protocol<br/>
-Repo: [foxglove/ws-protocol](https://github.com/foxglove/ws-protocol/tree/main/cpp)
-
-</td>
-</tr>
 <tr><td><strong>ROS</strong></td><td></td><td></td></tr>
 <tr>
-<td>foxglove_msgs</td>
+<td>
+
+[foxglove_msgs](./ros/foxglove_msgs)
+
+</td>
 <td>
 
 [![ROS Noetic version](https://img.shields.io/ros/v/noetic/foxglove_msgs)](https://index.ros.org/p/foxglove_msgs#noetic)<br/>
@@ -69,28 +72,16 @@ Repo: [foxglove/ws-protocol](https://github.com/foxglove/ws-protocol/tree/main/c
 [![ROS Rolling version](https://img.shields.io/ros/v/rolling/foxglove_msgs)](https://index.ros.org/p/foxglove_msgs#rolling)
 
 </td>
-<td>Foxglove message definitions for ROS 1 and ROS 2</td>
+<td>Foxglove schemas for ROS</td>
 </tr>
+
+<tr><td><strong>TypeScript</strong></td><td></td><td></td></tr>
 <tr>
-<td>foxglove_bridge</td>
 <td>
 
-[![ROS Noetic version](https://img.shields.io/ros/v/noetic/foxglove_bridge)](https://index.ros.org/p/foxglove_bridge#noetic)<br/>
-[![ROS Humble version](https://img.shields.io/ros/v/humble/foxglove_bridge)](https://index.ros.org/p/foxglove_bridge#humble)<br/>
-[![ROS Jazzy version](https://img.shields.io/ros/v/jazzy/foxglove_bridge)](https://index.ros.org/p/foxglove_bridge#jazzy)<br/>
-[![ROS Rolling version](https://img.shields.io/ros/v/rolling/foxglove_bridge)](https://index.ros.org/p/foxglove_bridge#rolling)
+[@foxglove/schemas](./typescript/schemas)
 
 </td>
-<td>
-
-ROS implementation of the WebSocket protocol<br/>
-Repo: [foxglove/ros-foxglove-bridge](https://github.com/foxglove/ros-foxglove-bridge)
-
-</td>
-</tr>
-<tr><td><strong>JavaScript / TypeScript</strong></td><td></td><td></td></tr>
-<tr>
-<td>@foxglove/schemas</td>
 <td>
 
 [![npm version](https://img.shields.io/npm/v/@foxglove/schemas)](https://www.npmjs.com/package/@foxglove/schemas)
@@ -98,26 +89,23 @@ Repo: [foxglove/ros-foxglove-bridge](https://github.com/foxglove/ros-foxglove-br
 </td>
 <td>Foxglove schemas for TypeScript</td>
 </tr>
+
+<tr><td><strong>Other</strong></td><td></td><td></td></tr>
 <tr>
-<td>@foxglove/ws-protocol</td>
 <td>
 
-[![npm version](https://img.shields.io/npm/v/@foxglove/ws-protocol)](https://www.npmjs.com/package/@foxglove/ws-protocol)
+[schemas](./schemas)
 
 </td>
-<td>
-
-TypeScript implementation of the WebSocket protocol<br/>
-Repo: [foxglove/ws-protocol](https://github.com/foxglove/ws-protocol/tree/main/typescript/ws-protocol)
-
-</td>
+<td></td>
+<td>Raw schema definitions for ROS, Protobuf, Flatbuffer, JSON, and OMG IDL</td>
 </tr>
 </tbody>
 </table>
 
-### Other
+## License
 
-The [schemas](./schemas) directory contains type definitions for ROS 1, ROS 2, Protobuf, JSON Schema, TypeScript, and OMG IDL. They can be copied and used in your application directly.
+[MIT License](/LICENSE)
 
 ## Stay in touch
 
