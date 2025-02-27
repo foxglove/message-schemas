@@ -2,6 +2,7 @@
 
 use std::collections::HashMap;
 use std::fmt::Display;
+use std::future::Future;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 
@@ -14,8 +15,8 @@ mod response;
 mod schema;
 #[cfg(test)]
 mod tests;
+use handler::{AsyncHandlerFn, BlockingHandlerFn, HandlerFn};
 pub use handler::{Handler, SyncHandler};
-use handler::{HandlerFn, SyncHandlerFn};
 pub use request::Request;
 pub use response::Responder;
 pub(crate) use schema::MessageSchema;
@@ -107,23 +108,40 @@ impl ServiceBuilder {
 
     /// Configures a handler function and returns the constructed [`Service`].
     ///
-    /// Refer to [`Handler::call`] for a description of the `call` function.
-    pub fn handler_fn<F>(self, call: F) -> Service
-    where
-        F: Fn(Request, Responder) + Send + Sync + 'static,
-    {
-        self.handler(HandlerFn(call))
-    }
-
-    /// Configures a synchronous handler function and returns the constructed [`Service`].
-    ///
     /// Refer to [`SyncHandler::call`] for a description of the `call` function.
-    pub fn sync_handler_fn<F, E>(self, call: F) -> Service
+    pub fn handler_fn<F, E>(self, call: F) -> Service
     where
         F: Fn(Request) -> Result<Bytes, E> + Send + Sync + 'static,
         E: Display + 'static,
     {
-        self.handler(SyncHandlerFn(call))
+        self.handler(HandlerFn(call))
+    }
+
+    /// Configures a blocking handler function and returns the constructed [`Service`].
+    ///
+    /// The handler is invoked on a blocking thread with [`tokio::task::spawn_blocking`].
+    ///
+    /// Refer to [`SyncHandler::call`] for a description of the `call` function.
+    pub fn blocking_handler_fn<F, E>(self, call: F) -> Service
+    where
+        F: Fn(Request) -> Result<Bytes, E> + Send + Sync + 'static,
+        E: Display + 'static,
+    {
+        self.handler(BlockingHandlerFn(Arc::new(call)))
+    }
+
+    /// Configures an async handler function and returns the constructed [`Service`].
+    ///
+    /// The handler is invoked as a new async task with [`tokio::spawn`].
+    ///
+    /// Refer to [`SyncHandler::call`] for a description of the `call` function.
+    pub fn async_handler_fn<F, Fut, E>(self, call: F) -> Service
+    where
+        F: Fn(Request) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = Result<Bytes, E>> + Send + 'static,
+        E: Display + Send + 'static,
+    {
+        self.handler(AsyncHandlerFn(Arc::new(call)))
     }
 }
 
