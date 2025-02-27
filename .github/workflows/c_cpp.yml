@@ -63,9 +63,6 @@ jobs:
       - name: Ensure generated files are up to date
         run: git diff --exit-code
 
-      - run: ls target/release
-      - run: ls target/${{ matrix.target }}/release
-
       - name: Build C++ library and run tests
         if: ${{ !fromJson(matrix.cross) }}
         run: make test
