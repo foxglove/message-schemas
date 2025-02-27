@@ -3,24 +3,23 @@ use clap::Parser;
 
 use foxglove::websocket::{AssetHandler, AssetResponder, Capability};
 use std::collections::HashMap;
-use std::sync::Arc;
 
 struct AssetServer {
-    assets: HashMap<String, Vec<u8>>,
+    assets: HashMap<String, Bytes>,
 }
 
 impl AssetServer {
-    fn new() -> Arc<Self> {
+    fn new() -> Self {
         let mut assets = HashMap::new();
-        assets.insert("/test/one".to_string(), b"one".to_vec());
-        assets.insert("/test/two".to_string(), b"two".to_vec());
+        assets.insert("/test/one".to_string(), Bytes::from_static(b"one"));
+        assets.insert("/test/two".to_string(), Bytes::from_static(b"two"));
 
-        Arc::new(Self { assets })
+        Self { assets }
     }
 }
 
 impl AssetHandler for AssetServer {
-    fn fetch(self: Arc<Self>, uri: String, responder: AssetResponder) {
+    fn fetch(&self, uri: String, responder: AssetResponder) {
         match self.assets.get(&uri) {
             // A real implementation might use std::fs::read to read a file into a Vec<u8>
             // The ws-protocol doesn't currently support streaming for a single asset.
@@ -53,7 +52,7 @@ async fn main() {
         .name("ws-demo")
         .bind(&args.host, args.port)
         .capabilities([Capability::Assets])
-        .fetch_asset_handler(asset_server)
+        .fetch_asset_handler(Box::new(asset_server))
         .start()
         .await
         .expect("Server failed to start");

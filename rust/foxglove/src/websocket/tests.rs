@@ -1270,13 +1270,15 @@ async fn test_services() {
 async fn test_fetch_asset() {
     let server = create_server(ServerOptions {
         capabilities: Some(HashSet::from([Capability::Assets])),
-        fetch_asset_handler: Some(Arc::new(BlockingAssetHandlerFn(|_client, uri: String| {
-            if uri.ends_with("error") {
-                Err("test error".to_string())
-            } else {
-                Ok(Bytes::from_static(b"test data"))
-            }
-        }))),
+        fetch_asset_handler: Some(Box::new(BlockingAssetHandlerFn(Arc::new(
+            |_client, uri: String| {
+                if uri.ends_with("error") {
+                    Err("test error".to_string())
+                } else {
+                    Ok(Bytes::from_static(b"test data"))
+                }
+            },
+        )))),
         ..Default::default()
     });
     let addr = server

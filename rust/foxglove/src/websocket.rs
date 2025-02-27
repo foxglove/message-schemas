@@ -181,7 +181,7 @@ pub(crate) struct ServerOptions {
     pub services: HashMap<String, Service>,
     pub supported_encodings: Option<HashSet<String>>,
     pub runtime: Option<Handle>,
-    pub fetch_asset_handler: Option<Arc<dyn AssetHandler>>,
+    pub fetch_asset_handler: Option<Box<dyn AssetHandler>>,
 }
 
 impl std::fmt::Debug for ServerOptions {
@@ -226,7 +226,7 @@ pub(crate) struct Server {
     /// Registered services.
     services: parking_lot::RwLock<ServiceMap>,
     /// Handler for fetch asset requests
-    fetch_asset_handler: Option<Arc<dyn AssetHandler>>,
+    fetch_asset_handler: Option<Box<dyn AssetHandler>>,
 }
 
 /// Provides a mechanism for registering callbacks for handling client message events.
@@ -850,7 +850,7 @@ impl ConnectedClient {
             return;
         };
 
-        if let Some(handler) = server.fetch_asset_handler.clone() {
+        if let Some(handler) = server.fetch_asset_handler.as_ref() {
             let asset_responder = AssetResponder::new(Client::new(self), request_id, guard);
             handler.fetch(uri, asset_responder);
         } else {

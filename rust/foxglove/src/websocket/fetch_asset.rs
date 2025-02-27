@@ -14,33 +14,35 @@ pub trait AssetHandler: Send + Sync + 'static {
     /// Fetch an asset with the given uri and return it via the responder.
     /// Fetch should not block, it should call `runtime.spawn`
     /// or `runtime.spawn_blocking` to do the actual work.
-    fn fetch(self: Arc<Self>, _uri: String, _responder: AssetResponder);
+    fn fetch(&self, _uri: String, _responder: AssetResponder);
 }
 
-pub(crate) struct BlockingAssetHandlerFn<F>(pub F);
+pub(crate) struct BlockingAssetHandlerFn<F>(pub Arc<F>);
 
 impl<F> AssetHandler for BlockingAssetHandlerFn<F>
 where
     F: Fn(Client, String) -> FetchAssetResult + Send + Sync + 'static,
 {
-    fn fetch(self: Arc<Self>, uri: String, responder: AssetResponder) {
+    fn fetch(&self, uri: String, responder: AssetResponder) {
+        let func = self.0.clone();
         tokio::task::spawn_blocking(move || {
-            let result = (self.0)(responder.client(), uri);
+            let result = (func)(responder.client(), uri);
             responder.respond(result);
         });
     }
 }
 
-pub(crate) struct AsyncAssetHandlerFn<F>(pub F);
+pub(crate) struct AsyncAssetHandlerFn<F>(pub Arc<F>);
 
 impl<F, Fut> AssetHandler for AsyncAssetHandlerFn<F>
 where
     F: Fn(Client, String) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = FetchAssetResult> + Send + 'static,
 {
-    fn fetch(self: Arc<Self>, uri: String, responder: AssetResponder) {
+    fn fetch(&self, uri: String, responder: AssetResponder) {
+        let func = self.0.clone();
         tokio::spawn(async move {
-            let result = (self.0)(responder.client(), uri).await;
+            let result = (func)(responder.client(), uri).await;
             responder.respond(result);
         });
     }

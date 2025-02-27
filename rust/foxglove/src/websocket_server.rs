@@ -75,7 +75,7 @@ impl WebSocketServer {
 
     /// Configure the handler for fetching assets.
     /// There can only be one asset handler, exclusive with the other fetch_asset_handler methods.
-    pub fn fetch_asset_handler(mut self, handler: Arc<dyn AssetHandler>) -> Self {
+    pub fn fetch_asset_handler(mut self, handler: Box<dyn AssetHandler>) -> Self {
         self.options.fetch_asset_handler = Some(handler);
         self
     }
@@ -86,7 +86,8 @@ impl WebSocketServer {
         mut self,
         handler: impl Fn(Client, String) -> FetchAssetResult + Send + Sync + 'static,
     ) -> Self {
-        self.options.fetch_asset_handler = Some(Arc::new(BlockingAssetHandlerFn(handler)));
+        self.options.fetch_asset_handler =
+            Some(Box::new(BlockingAssetHandlerFn(Arc::new(handler))));
         self
     }
 
@@ -97,7 +98,7 @@ impl WebSocketServer {
         F: Fn(Client, String) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = FetchAssetResult> + Send + 'static,
     {
-        self.options.fetch_asset_handler = Some(Arc::new(AsyncAssetHandlerFn(handler)));
+        self.options.fetch_asset_handler = Some(Box::new(AsyncAssetHandlerFn(Arc::new(handler))));
         self
     }
 
