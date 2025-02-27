@@ -41,7 +41,12 @@ pub async fn main(config: Config) -> Result<()> {
     for id in 0..50 {
         let client = client.clone();
         sleepers.spawn(async move {
-            match client.call_sleep().await {
+            let result = if id % 2 == 0 {
+                client.call_sleep().await
+            } else {
+                client.call_blocking().await
+            };
+            match result {
                 Err(e) => {
                     error!("{id} failed to sleep: {e}");
                 }
@@ -153,6 +158,13 @@ impl Client {
         self.service_call("/sleep", "raw", Bytes::new())
             .await
             .context("failed to call /sleep")?;
+        Ok(())
+    }
+
+    async fn call_blocking(&self) -> Result<()> {
+        self.service_call("/blocking", "raw", Bytes::new())
+            .await
+            .context("failed to call /blocking")?;
         Ok(())
     }
 
