@@ -1,6 +1,10 @@
 .PHONY: all
 all: build
 
+.PHONY: lint
+lint:
+	find . -path ./build -prune -name '*.h' -o -name '*.hpp' -o -name '*.cpp' | xargs clang-format --dry-run -Werror
+
 .PHONY: clean
 clean:
 	rm -rf build
