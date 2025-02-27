@@ -25,6 +25,10 @@ set_property(TARGET foxglove_c PROPERTY IMPORTED_LOCATION_RELWITHDEBINFO ${CMAKE
 set_property(TARGET foxglove_c PROPERTY IMPORTED_LOCATION_MINSIZEREL ${CMAKE_CURRENT_SOURCE_DIR}/../../${cargo_build_target_dir}/release/${CMAKE_STATIC_LIBRARY_PREFIX}foxglove_c${CMAKE_STATIC_LIBRARY_SUFFIX})
 target_include_directories(foxglove_c INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../../c/foxglove/generated/include)
 
+if(WIN32)
+  target_link_libraries(foxglove_c INTERFACE bcrypt kernel32 advapi32 ntdll userenv ws2_32 dbghelp)
+endif()
+
 file(GLOB_RECURSE foxglove_srcs CONFIGURE_DEPENDS
     "include/*.hpp"
     "src/*.hpp"
