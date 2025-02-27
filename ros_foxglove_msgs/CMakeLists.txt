@@ -14,7 +14,6 @@ if(${ROS_VERSION} EQUAL 1)
   find_package(catkin REQUIRED
     COMPONENTS
     message_generation
-    visualization_msgs
     geometry_msgs
   )
 
@@ -35,7 +34,7 @@ if(${ROS_VERSION} EQUAL 1)
 
   add_message_files(DIRECTORY msg)
 
-  generate_messages(DEPENDENCIES visualization_msgs geometry_msgs)
+  generate_messages(DEPENDENCIES geometry_msgs)
 
   catkin_package(CATKIN_DEPENDS message_runtime)
 
@@ -57,7 +56,6 @@ elseif(${ROS_VERSION} EQUAL 2)
   endif()
 
   find_package(ament_cmake REQUIRED)
-  find_package(visualization_msgs REQUIRED)
   find_package(geometry_msgs REQUIRED)
   find_package(rosidl_default_generators REQUIRED)
 
@@ -79,7 +77,7 @@ elseif(${ROS_VERSION} EQUAL 2)
 
   rosidl_generate_interfaces(${PROJECT_NAME}
     ${_all_msg_files}
-    DEPENDENCIES visualization_msgs geometry_msgs
+    DEPENDENCIES geometry_msgs
     ADD_LINTER_TESTS
   )
 
