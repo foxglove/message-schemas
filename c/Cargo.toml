@@ -6,10 +6,10 @@ publish = false
 
 [lib]
 name = "foxglove_c"
-crate-type = ["staticlib"]
+crate-type = ["staticlib", "cdylib"]
 
 [dependencies]
-foxglove = { path = "../../rust/foxglove", features = ["unstable"] }
+foxglove = { path = "../rust/foxglove", features = ["unstable"] }
 
 [build-dependencies]
 cbindgen = "0.28.0"
