@@ -23,7 +23,7 @@ impl AssetHandler for AssetServer {
         match self.assets.get(&uri) {
             // A real implementation might use std::fs::read to read a file into a Vec<u8>
             // The ws-protocol doesn't currently support streaming for a single asset.
-            Some(asset) => responder.respond(Ok(Bytes::copy_from_slice(asset))),
+            Some(asset) => responder.respond(Ok(asset.clone())),
             None => responder.respond(Err(format!("Asset {} not found", uri))),
         }
     }
