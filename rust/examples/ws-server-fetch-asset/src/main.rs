@@ -1,9 +1,9 @@
+use bytes::Bytes;
 use clap::Parser;
 
 use foxglove::websocket::{AssetHandler, AssetResponder, Capability};
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::runtime::Handle;
 
 struct AssetServer {
     assets: HashMap<String, Vec<u8>>,
@@ -20,11 +20,11 @@ impl AssetServer {
 }
 
 impl AssetHandler for AssetServer {
-    fn fetch(self: Arc<Self>, _runtime: &Handle, uri: String, responder: AssetResponder) {
+    fn fetch(self: Arc<Self>, uri: String, responder: AssetResponder) {
         match self.assets.get(&uri) {
             // A real implementation might use std::fs::read to read a file into a Vec<u8>
             // The ws-protocol doesn't currently support streaming for a single asset.
-            Some(asset) => responder.respond(Ok(asset.clone())),
+            Some(asset) => responder.respond(Ok(Bytes::copy_from_slice(asset))),
             None => responder.respond(Err(format!("Asset {} not found", uri))),
         }
     }

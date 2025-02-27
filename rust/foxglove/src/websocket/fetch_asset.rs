@@ -1,45 +1,45 @@
 use std::{future::Future, sync::Arc};
-use tokio::runtime::Handle;
+
+use bytes::Bytes;
 
 use super::{Client, SemaphoreGuard};
 
 /// The result of a fetch asset request.
-pub type FetchAssetResult = Result<Vec<u8>, String>;
+pub type FetchAssetResult = Result<Bytes, String>;
 
-/// A handler to respond to fetch asset requests
-/// See: https://github.com/foxglove/ws-protocol/blob/main/docs/spec.md#fetch-asset
+/// A handler to respond to fetch asset requests.
+///
+/// See: <https://github.com/foxglove/ws-protocol/blob/main/docs/spec.md#fetch-asset>
 pub trait AssetHandler: Send + Sync + 'static {
     /// Fetch an asset with the given uri and return it via the responder.
     /// Fetch should not block, it should call `runtime.spawn`
     /// or `runtime.spawn_blocking` to do the actual work.
-    fn fetch(self: Arc<Self>, _runtime: &Handle, _uri: String, _responder: AssetResponder);
+    fn fetch(self: Arc<Self>, _uri: String, _responder: AssetResponder);
 }
 
-#[doc(hidden)]
-pub struct SyncAssetHandlerFn<F>(pub F);
+pub(crate) struct BlockingAssetHandlerFn<F>(pub F);
 
-impl<F> AssetHandler for SyncAssetHandlerFn<F>
+impl<F> AssetHandler for BlockingAssetHandlerFn<F>
 where
     F: Fn(Client, String) -> FetchAssetResult + Send + Sync + 'static,
 {
-    fn fetch(self: Arc<Self>, runtime: &Handle, uri: String, responder: AssetResponder) {
-        runtime.spawn_blocking(move || {
+    fn fetch(self: Arc<Self>, uri: String, responder: AssetResponder) {
+        tokio::task::spawn_blocking(move || {
             let result = (self.0)(responder.client(), uri);
             responder.respond(result);
         });
     }
 }
 
-#[doc(hidden)]
-pub struct AsyncAssetHandlerFn<F>(pub F);
+pub(crate) struct AsyncAssetHandlerFn<F>(pub F);
 
 impl<F, Fut> AssetHandler for AsyncAssetHandlerFn<F>
 where
     F: Fn(Client, String) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = FetchAssetResult> + Send + 'static,
 {
-    fn fetch(self: Arc<Self>, runtime: &Handle, uri: String, responder: AssetResponder) {
-        runtime.spawn(async move {
+    fn fetch(self: Arc<Self>, uri: String, responder: AssetResponder) {
+        tokio::spawn(async move {
             let result = (self.0)(responder.client(), uri).await;
             responder.respond(result);
         });

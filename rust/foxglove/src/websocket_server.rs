@@ -6,8 +6,8 @@ use std::sync::Arc;
 
 use crate::websocket::service::Service;
 use crate::websocket::{
-    create_server, AssetHandler, AsyncAssetHandlerFn, Capability, Client, FetchAssetResult,
-    Parameter, Server, ServerOptions, Status, SyncAssetHandlerFn,
+    create_server, AssetHandler, AsyncAssetHandlerFn, BlockingAssetHandlerFn, Capability, Client,
+    FetchAssetResult, Parameter, Server, ServerOptions, Status,
 };
 use crate::{get_runtime_handle, FoxgloveError, LogContext, LogSink};
 use tokio::runtime::Handle;
@@ -74,21 +74,24 @@ impl WebSocketServer {
     }
 
     /// Configure the handler for fetching assets.
+    /// There can only be one asset handler, exclusive with the other fetch_asset_handler methods.
     pub fn fetch_asset_handler(mut self, handler: Arc<dyn AssetHandler>) -> Self {
         self.options.fetch_asset_handler = Some(handler);
         self
     }
 
-    /// Configure a synchronous function as a fetch asset handler.
-    pub fn fetch_asset_handler_sync_fn(
+    /// Configure a synchronous, blocking function as a fetch asset handler.
+    /// There can only be one asset handler, exclusive with the other fetch_asset_handler methods.
+    pub fn fetch_asset_handler_blocking_fn(
         mut self,
         handler: impl Fn(Client, String) -> FetchAssetResult + Send + Sync + 'static,
     ) -> Self {
-        self.options.fetch_asset_handler = Some(Arc::new(SyncAssetHandlerFn(handler)));
+        self.options.fetch_asset_handler = Some(Arc::new(BlockingAssetHandlerFn(handler)));
         self
     }
 
     /// Configure an asynchronous function as a fetch asset handler.
+    /// There can only be one asset handler, exclusive with the other fetch_asset_handler methods.
     pub fn fetch_asset_handler_async_fn<F, Fut>(mut self, handler: F) -> Self
     where
         F: Fn(Client, String) -> Fut + Send + Sync + 'static,

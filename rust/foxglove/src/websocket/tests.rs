@@ -1,5 +1,5 @@
 use assert_matches::assert_matches;
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, Bytes, BytesMut};
 use futures_util::{FutureExt, SinkExt, StreamExt};
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -14,8 +14,8 @@ use super::{create_server, send_lossy, SendLossyResult, ServerOptions, SUBPROTOC
 use crate::testutil::RecordingServerListener;
 use crate::websocket::service::{CallId, Service, ServiceId, ServiceSchema};
 use crate::websocket::{
-    Capability, ClientChannelId, Parameter, ParameterType, ParameterValue, Status, StatusLevel,
-    SyncAssetHandlerFn,
+    BlockingAssetHandlerFn, Capability, ClientChannelId, Parameter, ParameterType, ParameterValue,
+    Status, StatusLevel,
 };
 use crate::{
     collection, Channel, ChannelBuilder, FoxgloveError, LogContext, LogSink, Metadata, Schema,
@@ -1270,11 +1270,11 @@ async fn test_services() {
 async fn test_fetch_asset() {
     let server = create_server(ServerOptions {
         capabilities: Some(HashSet::from([Capability::Assets])),
-        fetch_asset_handler: Some(Arc::new(SyncAssetHandlerFn(|_client, uri: String| {
+        fetch_asset_handler: Some(Arc::new(BlockingAssetHandlerFn(|_client, uri: String| {
             if uri.ends_with("error") {
                 Err("test error".to_string())
             } else {
-                Ok(b"test data".to_vec())
+                Ok(Bytes::from_static(b"test data"))
             }
         }))),
         ..Default::default()

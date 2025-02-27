@@ -34,9 +34,8 @@ use tokio_tungstenite::{
 use tokio_util::sync::CancellationToken;
 
 mod fetch_asset;
-pub use fetch_asset::{
-    AssetHandler, AssetResponder, AsyncAssetHandlerFn, FetchAssetResult, SyncAssetHandlerFn,
-};
+pub use fetch_asset::{AssetHandler, AssetResponder, FetchAssetResult};
+pub(crate) use fetch_asset::{AsyncAssetHandlerFn, BlockingAssetHandlerFn};
 mod protocol;
 mod semaphore;
 pub mod service;
@@ -111,7 +110,7 @@ impl Client {
         if let Some(client) = self.client.upgrade() {
             match result {
                 Ok(asset) => client.send_asset_response(&asset, request_id),
-                Err(error) => client.send_asset_error(&error, request_id),
+                Err(err) => client.send_asset_error(&err.to_string(), request_id),
             }
         }
     }
@@ -853,7 +852,7 @@ impl ConnectedClient {
 
         if let Some(handler) = server.fetch_asset_handler.clone() {
             let asset_responder = AssetResponder::new(Client::new(self), request_id, guard);
-            handler.fetch(server.runtime(), uri, asset_responder);
+            handler.fetch(uri, asset_responder);
         } else {
             self.send_asset_error("Server does not have a fetch asset handler", request_id);
         }
@@ -890,6 +889,7 @@ impl ConnectedClient {
         buf.put_u8(protocol::server::BinaryOpcode::FetchAssetResponse as u8);
         buf.put_u32_le(request_id);
         buf.put_u8(1); // 1 for error
+        buf.put_u32_le(error.len() as u32);
         buf.put(error.as_bytes());
         let message = Message::binary(buf);
         self.send_control_msg(message);
@@ -902,6 +902,7 @@ impl ConnectedClient {
         buf.put_u8(protocol::server::BinaryOpcode::FetchAssetResponse as u8);
         buf.put_u32_le(request_id);
         buf.put_u8(0); // 0 for success
+        buf.put_u32_le(0); // error length, 0 for no error
         buf.put(response);
         let message = Message::binary(buf);
         self.send_control_msg(message);
