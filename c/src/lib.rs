@@ -6,7 +6,7 @@ use std::ffi::{c_char, CStr};
 
 pub struct FoxgloveWebSocketServer(Option<foxglove::WebSocketServerBlockingHandle>);
 
-/// Create and start a server. The server must later be freed with `foxglove_server_destroy`.
+/// Create and start a server. The server must later be freed with `foxglove_server_free`.
 ///
 /// # Safety
 /// `name` and `host` must be null-terminated strings with valid UTF8.
@@ -30,7 +30,7 @@ pub unsafe extern "C" fn foxglove_server_start(
 ///
 /// If the server has not already been stopped, it will be stopped automatically.
 #[unsafe(no_mangle)]
-pub extern "C" fn foxglove_server_destroy(server: Option<&mut FoxgloveWebSocketServer>) {
+pub extern "C" fn foxglove_server_free(server: Option<&mut FoxgloveWebSocketServer>) {
     let Some(server) = server else {
         return;
     };
