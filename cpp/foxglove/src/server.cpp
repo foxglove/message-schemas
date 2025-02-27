@@ -8,7 +8,7 @@ WebSocketServer::WebSocketServer(WebSocketServerOptions options)
             foxglove_server_destroy) {}
 
 void WebSocketServer::stop() {
-   foxglove_server_stop(_impl.get());
+  foxglove_server_stop(_impl.get());
 }
 
 }  // namespace foxglove

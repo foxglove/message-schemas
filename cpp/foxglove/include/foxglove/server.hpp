@@ -7,7 +7,7 @@ struct foxglove_websocket_server;
 namespace foxglove {
 
 struct WebSocketServerOptions {
-   std::string name;
+  std::string name;
   std::string host;
   uint16_t port;
 };
