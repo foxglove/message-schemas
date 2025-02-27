@@ -98,6 +98,15 @@ class Channel:
 
         raise ValueError(f"Unsupported message type: {type(msg)}")
 
+    def close(self) -> None:
+        """
+        Close the channel.
+
+        You do not need to call this unless you explicitly want to remove advertisements from live
+        visualization clients. Destroying all references to the channel will also close it.
+        """
+        self.base.close()
+
 
 _channels_by_topic: Dict[str, Channel] = {}
 

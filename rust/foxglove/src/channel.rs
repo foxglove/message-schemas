@@ -145,6 +145,16 @@ impl Channel {
 
         self.sinks.for_each(|sink| sink.log(self, msg, &metadata));
     }
+
+    /// Close the channel.
+    /// Note the channel is closed automatically when dropped.
+    pub fn close(&self) {
+        self.sinks.for_each(|sink| {
+            sink.remove_channel(self);
+            Ok(())
+        });
+        self.sinks.clear();
+    }
 }
 
 #[cfg(test)]

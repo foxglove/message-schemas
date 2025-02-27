@@ -23,7 +23,10 @@ mod generated;
 mod websocket_server;
 
 #[pyclass(module = "foxglove")]
-struct BaseChannel(Arc<Channel>);
+struct BaseChannel {
+    is_closed: bool,
+    channel: Arc<Channel>,
+}
 
 /// A writer for logging messages to an MCAP file.
 ///
@@ -117,7 +120,10 @@ impl BaseChannel {
             .build()
             .map_err(PyFoxgloveError::from)?;
 
-        Ok(BaseChannel(channel))
+        Ok(BaseChannel {
+            is_closed: false,
+            channel,
+        })
     }
 
     #[pyo3(signature = (msg, log_time=None, publish_time=None, sequence=None))]
@@ -128,13 +134,23 @@ impl BaseChannel {
         publish_time: Option<u64>,
         sequence: Option<u32>,
     ) -> PyResult<()> {
+        if self.is_closed {
+            tracing::debug!(target: "foxglove.channels", "Cannot log() on a closed channel");
+            return Ok(());
+        }
+
         let metadata = PartialMetadata {
             log_time,
             publish_time,
             sequence,
         };
-        self.0.log_with_meta(msg, metadata);
+        self.channel.log_with_meta(msg, metadata);
         Ok(())
+    }
+
+    fn close(&mut self) {
+        self.is_closed = true;
+        self.channel.close();
     }
 }
 
@@ -161,7 +177,10 @@ fn open_mcap(path: PathBuf, allow_overwrite: bool) -> PyResult<PyMcapWriter> {
 #[pyfunction]
 fn get_channel_for_topic(topic: &str) -> PyResult<Option<BaseChannel>> {
     let channel = LogContext::global().get_channel_by_topic(topic);
-    Ok(channel.map(BaseChannel))
+    Ok(channel.map(|channel| BaseChannel {
+        is_closed: false,
+        channel,
+    }))
 }
 
 // Not public. Re-exported in a wrapping function.
