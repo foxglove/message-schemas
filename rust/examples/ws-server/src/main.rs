@@ -48,10 +48,7 @@ fn log(counter: u32) {
         entities: vec![SceneEntity {
             frame_id: "box".to_string(),
             id: "box_1".to_string(),
-            lifetime: Some(foxglove::schemas::Duration {
-                seconds: 10,
-                nanos: 0,
-            }),
+            lifetime: Some(foxglove::schemas::Duration { sec: 10, nsec: 0 }),
             cubes: vec![CubePrimitive {
                 pose: Some(Pose {
                     position: Some(Vector3 {

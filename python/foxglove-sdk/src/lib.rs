@@ -166,15 +166,17 @@ fn get_channel_for_topic(topic: &str) -> PyResult<Option<BaseChannel>> {
 
 // Not public. Re-exported in a wrapping function.
 #[pyfunction]
-fn enable_logging(level: &str) -> PyResult<()> {
-    let level = match level.to_lowercase().as_str() {
-        "info" => LevelFilter::Info,
-        "debug" => LevelFilter::Debug,
-        "warn" => LevelFilter::Warn,
-        "error" => LevelFilter::Error,
-        _ => return Err(PyErr::new::<PyValueError, _>("Invalid log level")),
+fn enable_logging(level: u32) -> PyResult<()> {
+    // SDK will not log at levels "CRITICAL" or higher.
+    // https://docs.python.org/3/library/logging.html#logging-levels
+    let level = match level {
+        50.. => LevelFilter::Off,
+        40.. => LevelFilter::Error,
+        30.. => LevelFilter::Warn,
+        20.. => LevelFilter::Info,
+        10.. => LevelFilter::Debug,
+        0.. => LevelFilter::Trace,
     };
-
     log::set_max_level(level);
     Ok(())
 }
