@@ -15,11 +15,10 @@ int main(int argc, const char* argv[]) {
     if (sigintHandler) sigintHandler();
   });
 
-  foxglove::WebSocketServerOptions options{
-    .name = "ws-demo-cpp",
-    .host = "127.0.0.1",
-    .port = 8765,
-  };
+  foxglove::WebSocketServerOptions options;
+  options.name = "ws-demo-cpp";
+  options.host = "127.0.0.1";
+  options.port = 8765;
   foxglove::WebSocketServer server{options};
   std::cerr << "Started server" << std::endl;
 

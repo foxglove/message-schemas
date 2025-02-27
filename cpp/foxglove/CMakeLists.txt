@@ -32,7 +32,7 @@ file(GLOB_RECURSE foxglove_srcs CONFIGURE_DEPENDS
 )
 
 add_library(foxglove STATIC "${foxglove_srcs}")
-set_property(TARGET foxglove PROPERTY CXX_STANDARD 20)
+set_property(TARGET foxglove PROPERTY CXX_STANDARD 17)
 set_property(TARGET foxglove PROPERTY CXX_STANDARD_REQUIRED True)
 target_include_directories(foxglove PUBLIC include)
 target_link_libraries(foxglove PRIVATE foxglove_c)
@@ -42,7 +42,7 @@ file(GLOB_RECURSE foxglove_test_srcs CONFIGURE_DEPENDS
     "tests/*.cpp"
 )
 add_executable(tests "${foxglove_test_srcs}")
-set_property(TARGET tests PROPERTY CXX_STANDARD 20)
+set_property(TARGET tests PROPERTY CXX_STANDARD 17)
 set_property(TARGET tests PROPERTY CXX_STANDARD_REQUIRED True)
 target_link_libraries(tests PRIVATE foxglove Catch2::Catch2WithMain)
 catch_discover_tests(tests)
