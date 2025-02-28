@@ -37,7 +37,7 @@ pub extern "C" fn foxglove_server_get_port(server: Option<&FoxgloveWebSocketServ
     let Some(ref handle) = server.0 else {
         panic!("Server already stopped");
     };
-    handle.local_address().map(|addr| addr.port()).unwrap_or(0)
+    handle.local_port().unwrap_or(0)
 }
 
 /// Free a server created via `foxglove_server_start`.

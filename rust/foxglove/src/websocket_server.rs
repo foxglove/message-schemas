@@ -214,11 +214,9 @@ impl WebSocketServerHandle {
         self.0.runtime()
     }
 
-    /// Returns the local address that the server is listening on.
-    pub fn local_address(&self) -> Result<std::net::SocketAddr, FoxgloveError> {
-        self.0
-            .local_address()
-            .ok_or(FoxgloveError::ServerNotStarted)
+    /// Returns the local port that the server is listening on.
+    pub fn local_port(&self) -> Result<u16, FoxgloveError> {
+        self.0.local_port().ok_or(FoxgloveError::ServerNotStarted)
     }
 
     /// Advertises support for the provided services.
@@ -298,9 +296,9 @@ impl WebSocketServerHandle {
 pub struct WebSocketServerBlockingHandle(WebSocketServerHandle);
 
 impl WebSocketServerBlockingHandle {
-    /// Returns the local address that the server is listening on.
-    pub fn local_address(&self) -> Result<std::net::SocketAddr, FoxgloveError> {
-        self.0.local_address()
+    /// Returns the local port that the server is listening on.
+    pub fn local_port(&self) -> Result<u16, FoxgloveError> {
+        self.0.local_port()
     }
 
     /// Advertises support for the provided services.

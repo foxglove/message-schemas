@@ -210,8 +210,8 @@ pub(crate) struct Server {
     /// It's analogous to the mixin shared_from_this in C++.
     weak_self: Weak<Self>,
     started: AtomicBool,
-    /// Local address the server is listening on, once it has been started
-    local_address: parking_lot::RwLock<Option<SocketAddr>>,
+    /// Local port the server is listening on, once it has been started
+    local_port: parking_lot::RwLock<Option<u16>>,
     message_backlog_size: u32,
     runtime: Handle,
     /// May be provided by the caller
@@ -1047,7 +1047,7 @@ impl Server {
 
         Server {
             weak_self,
-            local_address: parking_lot::RwLock::new(None),
+            local_port: parking_lot::RwLock::new(None),
             started: AtomicBool::new(false),
             message_backlog_size: opts
                 .message_backlog_size
@@ -1077,8 +1077,8 @@ impl Server {
             .expect("server cannot be dropped while in use")
     }
 
-    pub(crate) fn local_address(&self) -> Option<SocketAddr> {
-        *self.local_address.read()
+    pub(crate) fn local_port(&self) -> Option<u16> {
+        *self.local_port.read()
     }
 
     // Returns a handle to the async runtime that this server is using.
@@ -1086,7 +1086,7 @@ impl Server {
         &self.runtime
     }
 
-    // Spawn a task to accept all incoming connections and return the server's local address
+    // Spawn a task to accept all incoming connections and return the server's local port
     pub async fn start(&self, host: &str, port: u16) -> Result<SocketAddr, FoxgloveError> {
         if self.started.load(Acquire) {
             return Err(FoxgloveError::ServerAlreadyStarted);
@@ -1099,7 +1099,7 @@ impl Server {
             .await
             .map_err(FoxgloveError::Bind)?;
         let local_addr = listener.local_addr().map_err(FoxgloveError::Bind)?;
-        *self.local_address.write() = Some(local_addr);
+        *self.local_port.write() = Some(local_addr.port());
 
         let cancellation_token = self.cancellation_token.clone();
         let server = self.arc().clone();
@@ -1126,7 +1126,7 @@ impl Server {
             return;
         }
         tracing::info!("Shutting down");
-        *self.local_address.write() = None;
+        *self.local_port.write() = None;
         let clients = self.clients.get();
         for client in clients.iter() {
             let mut sender = client.sender.lock().await;
