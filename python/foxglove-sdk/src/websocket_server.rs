@@ -209,6 +209,34 @@ impl ServerListener for PyServerListener {
             tracing::error!("Callback failed: {}", err.to_string());
         }
     }
+
+    fn on_connection_graph_subscribe(&self) {
+        let result: PyResult<()> = Python::with_gil(|py| {
+            self.listener
+                .bind(py)
+                .call_method("on_connection_graph_subscribe", (), None)?;
+
+            Ok(())
+        });
+
+        if let Err(err) = result {
+            tracing::error!("Callback failed: {}", err.to_string());
+        }
+    }
+
+    fn on_connection_graph_unsubscribe(&self) {
+        let result: PyResult<()> = Python::with_gil(|py| {
+            self.listener
+                .bind(py)
+                .call_method("on_connection_graph_unsubscribe", (), None)?;
+
+            Ok(())
+        });
+
+        if let Err(err) = result {
+            tracing::error!("Callback failed: {}", err.to_string());
+        }
+    }
 }
 
 impl PyServerListener {
@@ -443,6 +471,17 @@ impl PyWebSocketServer {
             py.allow_threads(move || server.remove_services(names));
         }
     }
+
+    pub fn publish_connection_graph(&self, graph: Bound<'_, PyConnectionGraph>) -> PyResult<()> {
+        let Some(server) = &self.0 else {
+            return Ok(());
+        };
+        let graph = graph.extract::<PyConnectionGraph>()?;
+        server
+            .publish_connection_graph(graph.into())
+            .map_err(PyFoxgloveError::from)
+            .map_err(PyErr::from)
+    }
 }
 
 /// A level for :py:meth:`WebSocketServer.publish_status`.
@@ -473,6 +512,8 @@ impl From<PyStatusLevel> for StatusLevel {
 pub enum PyCapability {
     /// Allow clients to advertise channels to send data messages to the server.
     ClientPublish,
+    /// Allow clients to subscribe and make connection graph updates
+    ConnectionGraph,
     /// Allow clients to get & set parameters.
     Parameters,
     /// Inform clients about the latest server time.
@@ -489,6 +530,7 @@ impl From<PyCapability> for foxglove::websocket::Capability {
     fn from(value: PyCapability) -> Self {
         match value {
             PyCapability::ClientPublish => foxglove::websocket::Capability::ClientPublish,
+            PyCapability::ConnectionGraph => foxglove::websocket::Capability::ConnectionGraph,
             PyCapability::Parameters => foxglove::websocket::Capability::Parameters,
             PyCapability::Time => foxglove::websocket::Capability::Time,
             PyCapability::Services => foxglove::websocket::Capability::Services,
@@ -815,5 +857,58 @@ impl From<foxglove::websocket::Parameter> for PyParameter {
             r#type: value.r#type.map(Into::into),
             value: value.value.map(Into::into),
         }
+    }
+}
+
+#[pyclass(name = "ConnectionGraph", module = "foxglove")]
+#[derive(Clone)]
+pub struct PyConnectionGraph(foxglove::websocket::ConnectionGraph);
+
+#[pymethods]
+impl PyConnectionGraph {
+    /// Create a new connection graph.
+    #[new]
+    fn default() -> Self {
+        Self(foxglove::websocket::ConnectionGraph::new())
+    }
+
+    /// Set a published topic and its associated publisher ids.
+    /// Overwrites any existing topic with the same name.
+    /// :param topic: The topic name.
+    /// :type topic: str
+    /// :param publisher_ids: The set of publisher ids.
+    /// :type publisher_ids: list[str]
+    pub fn set_published_topic(&mut self, topic: &str, publisher_ids: Vec<String>) {
+        self.0.set_published_topic(topic, publisher_ids);
+    }
+
+    /// Set a subscribed topic and its associated subscriber ids.
+    /// Overwrites any existing topic with the same name.
+    /// :param topic: The topic name.
+    /// :type topic: str
+    /// :param subscriber_ids: The set of subscriber ids.
+    /// :type subscriber_ids: list[str]
+    pub fn set_subscribed_topic(&mut self, topic: &str, subscriber_ids: Vec<String>) {
+        self.0.set_subscribed_topic(topic, subscriber_ids);
+    }
+
+    /// Set an advertised service and its associated provider ids.
+    /// Overwrites any existing service with the same name.
+    /// :param service: The service name.
+    /// :type service: str
+    /// :param provider_ids: The set of provider ids.
+    /// :type provider_ids: list[str]
+    pub fn set_advertised_service(&mut self, service: &str, provider_ids: Vec<String>) {
+        self.0.set_advertised_service(service, provider_ids);
+    }
+
+    pub fn __repr__(&self) -> String {
+        format!("{:?}", self.0)
+    }
+}
+
+impl From<PyConnectionGraph> for foxglove::websocket::ConnectionGraph {
+    fn from(value: PyConnectionGraph) -> Self {
+        value.0
     }
 }

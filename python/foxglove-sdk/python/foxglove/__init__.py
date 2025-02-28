@@ -13,6 +13,7 @@ from ._foxglove_py import (
     Capability,
     ChannelView,
     Client,
+    ConnectionGraph,
     MCAPWriter,
     MessageSchema,
     Parameter,
@@ -169,6 +170,18 @@ class ServerListener(Protocol):
         """
         return None
 
+    def on_connection_graph_subscribe(self) -> None:
+        """
+        Called by the server when the first client subscribes to the connection graph.
+        """
+        return None
+
+    def on_connection_graph_unsubscribe(self) -> None:
+        """
+        Called by the server when the last client unsubscribes from the connection graph.
+        """
+        return None
+
 
 ServiceHandler = Callable[["Request"], bytes]
 
@@ -261,6 +274,7 @@ __all__ = [
     "Channel",
     "ChannelView",
     "Client",
+    "ConnectionGraph",
     "MCAPWriter",
     "MessageSchema",
     "Parameter",
