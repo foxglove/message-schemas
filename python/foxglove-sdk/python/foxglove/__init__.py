@@ -29,7 +29,7 @@ from ._foxglove_py import (
     shutdown,
 )
 from ._foxglove_py import start_server as _start_server
-from .channel import Channel, ChannelSchema, log
+from .channel import Channel, log
 
 atexit.register(shutdown)
 
@@ -220,7 +220,6 @@ def _level_names() -> dict[str, int]:
 __all__ = [
     "Capability",
     "Channel",
-    "ChannelSchema",
     "ChannelView",
     "Client",
     "MCAPWriter",

@@ -9,7 +9,6 @@ import mcap.records
 from foxglove import (
     Capability,
     Channel,
-    ChannelSchema,
     Schema,
     WebSocketServer,
     start_server,
@@ -74,22 +73,18 @@ def get_channel(
     if mcap_channel.topic in channels:
         return channels[mcap_channel.topic]
 
-    schema = (
-        {"type": "object", "additionalProperties": True}
-        if mcap_schema is None
-        else ChannelSchema(
-            message_encoding=mcap_channel.message_encoding,
-            schema=Schema(
+    channels[mcap_channel.topic] = Channel(
+        topic=mcap_channel.topic,
+        message_encoding=mcap_channel.message_encoding,
+        schema=(
+            None
+            if mcap_schema is None
+            else Schema(
                 name=mcap_schema.name,
                 encoding=mcap_schema.encoding,
                 data=mcap_schema.data,
-            ),
-        )
-    )
-
-    channels[mcap_channel.topic] = Channel(
-        topic=mcap_channel.topic,
-        schema=schema,
+            )
+        ),
     )
 
     return channels[mcap_channel.topic]
