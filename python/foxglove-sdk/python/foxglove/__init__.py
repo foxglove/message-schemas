@@ -220,6 +220,7 @@ def _level_names() -> dict[str, int]:
 __all__ = [
     "Capability",
     "Channel",
+    "ChannelView",
     "Client",
     "MCAPWriter",
     "MessageSchema",

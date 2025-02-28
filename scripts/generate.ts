@@ -26,7 +26,6 @@ import {
   generateSchemaPrelude,
   generatePyclass,
   generatePySchemaStub,
-  generateTimeTypes,
   generateChannelClasses,
   generatePyChannelStub,
   generatePySchemaModule,
@@ -230,8 +229,6 @@ async function main({ clean }: { clean: boolean }) {
     for (const enumSchema of enumSchemas) {
       writer.write(generatePyclass(enumSchema));
     }
-
-    writer.write(generateTimeTypes());
 
     const messageSchemas = Object.values(foxgloveMessageSchemas);
     for (const schema of messageSchemas) {

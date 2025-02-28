@@ -196,17 +196,6 @@ class CylinderPrimitive:
         color: "Optional[Color]" = None,
     ) -> "CylinderPrimitive": ...
 
-class Duration:
-    """
-    A duration in seconds and nanoseconds
-    """
-
-    def __new__(
-        cls,
-        sec: int,
-        nsec: Optional[int] = None,
-    ) -> "Duration": ...
-
 class FrameTransform:
     """
     A transform between two reference frames in 3D space
@@ -594,17 +583,6 @@ class TextPrimitive:
         color: "Optional[Color]" = None,
         text: "Optional[str]" = "",
     ) -> "TextPrimitive": ...
-
-class Timestamp:
-    """
-    A timestamp in seconds and nanoseconds
-    """
-
-    def __new__(
-        cls,
-        sec: int,
-        nsec: Optional[int] = None,
-    ) -> "Timestamp": ...
 
 class TriangleListPrimitive:
     """
