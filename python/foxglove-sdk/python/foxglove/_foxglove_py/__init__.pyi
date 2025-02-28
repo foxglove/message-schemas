@@ -49,6 +49,7 @@ class WebSocketServer:
     def remove_status(self, ids: list[str]) -> None: ...
     def add_services(self, services: list["Service"]) -> None: ...
     def remove_services(self, names: list[str]) -> None: ...
+    def publish_connection_graph(self, graph: "ConnectionGraph") -> None: ...
 
 class BaseChannel:
     """
@@ -59,9 +60,7 @@ class BaseChannel:
         cls,
         topic: str,
         message_encoding: str,
-        schema_name: Optional[str] = None,
-        schema_encoding: Optional[str] = None,
-        schema_data: Optional[bytes] = None,
+        schema: Optional["Schema"] = None,
         metadata: Optional[List[Tuple[str, str]]] = None,
     ) -> "BaseChannel": ...
     def log(
@@ -80,6 +79,9 @@ class Capability(Enum):
 
     ClientPublish = ...
     """Allow clients to advertise channels to send data messages to the server."""
+
+    Connectiongraph = ...
+    """Allow clients to subscribe and make connection graph updates"""
 
     Parameters = ...
     """Allow clients to get & set parameters."""
@@ -256,6 +258,16 @@ class Schema:
         encoding: str,
         data: bytes,
     ) -> "Schema": ...
+
+class ConnectionGraph:
+    """
+    A graph of connections between clients.
+    """
+
+    def __new__(cls) -> "ConnectionGraph": ...
+    def set_published_topic(self, topic: str, publisher_ids: List[str]) -> None: ...
+    def set_subscribed_topic(self, topic: str, subscriber_ids: List[str]) -> None: ...
+    def set_advertised_service(self, service: str, provider_ids: List[str]) -> None: ...
 
 def start_server(
     *,

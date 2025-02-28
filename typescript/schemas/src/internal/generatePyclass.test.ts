@@ -9,7 +9,9 @@ describe("generatePyclass", () => {
         #![allow(clippy::too_many_arguments)]
         #![allow(clippy::enum_variant_names)]
         #![allow(non_snake_case)]
-        use pyo3::{prelude::*, types::PyBytes};
+        use crate::schemas_wkt::{Duration, Timestamp};
+        use pyo3::prelude::*;
+        use pyo3::types::PyBytes;
 
         "
         `);
