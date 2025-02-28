@@ -108,6 +108,7 @@ pub enum StatusLevel {
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "op")]
 #[serde(rename = "status")]
+#[must_use]
 pub struct Status {
     pub(crate) level: StatusLevel,
     pub(crate) message: String,

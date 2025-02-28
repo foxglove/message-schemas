@@ -498,7 +498,7 @@ impl ConnectedClient {
         }
         // Call the handler after releasing the advertised_channels lock
         if let Some(handler) = self.server_listener.as_ref() {
-            for (id, client_channel) in channel_ids.iter().cloned().zip(client_channels) {
+            for (id, client_channel) in channel_ids.iter().copied().zip(client_channels) {
                 handler.on_client_unadvertise(
                     Client::new(self),
                     ClientChannelView {
@@ -745,7 +745,7 @@ impl ConnectedClient {
 
         // Get the list of which subscriptions are new to the server (first time subscriptions)
         if self.server_listener.is_some() {
-            for name in param_names.iter() {
+            for name in &param_names {
                 if all_subscriptions.insert(name.clone()) {
                     new_param_subscriptions.push(name.clone());
                 }
@@ -1034,7 +1034,7 @@ impl Server {
             supported_encodings.extend(
                 opts.services
                     .values()
-                    .flat_map(|svc| svc.schema().request().map(|s| s.encoding.clone())),
+                    .filter_map(|svc| svc.schema().request().map(|s| s.encoding.clone())),
             );
         }
 
@@ -1130,7 +1130,7 @@ impl Server {
         self.cancellation_token.cancel();
     }
 
-    async fn advertise_channel(&self, channel: Arc<Channel>) {
+    fn advertise_channel(&self, channel: &Arc<Channel>) {
         if channel.schema.is_none() {
             tracing::error!(
                 "Ignoring advertise channel for {} because a schema is required",
@@ -1141,7 +1141,7 @@ impl Server {
 
         self.channels.write().insert(channel.id, channel.clone());
 
-        let message = match protocol::server::advertisement(&channel) {
+        let message = match protocol::server::advertisement(channel) {
             Ok(message) => message,
             Err(err) => {
                 tracing::error!("Error creating advertise channel message to client: {err}");
@@ -1162,7 +1162,7 @@ impl Server {
         }
     }
 
-    async fn unadvertise_channel(&self, channel_id: ChannelId) {
+    fn unadvertise_channel(&self, channel_id: ChannelId) {
         self.channels.write().remove(&channel_id);
 
         let message = protocol::server::unadvertise(channel_id);
@@ -1267,12 +1267,9 @@ impl Server {
     /// - Advertise existing services
     /// - Listen for client meesages
     async fn handle_connection(self: Arc<Self>, stream: TcpStream, addr: SocketAddr) {
-        let ws_stream = match do_handshake(stream).await {
-            Ok(ws_stream) => ws_stream,
-            Err(_) => {
-                tracing::error!("Dropping client {addr}: {}", WSError::HandshakeError);
-                return;
-            }
+        let Ok(ws_stream) = do_handshake(stream).await else {
+            tracing::error!("Dropping client {addr}: {}", WSError::HandshakeError);
+            return;
         };
 
         let (mut ws_sender, mut ws_receiver) = ws_stream.split();
@@ -1399,7 +1396,7 @@ impl Server {
             services.len(),
         );
 
-        for channel in channels.into_iter() {
+        for channel in channels {
             let message = match protocol::server::advertisement(&channel) {
                 Ok(message) => message,
                 Err(err) => {
@@ -1491,7 +1488,7 @@ impl Server {
         // Send advertisements.
         let clients = self.clients.get();
         for client in clients.iter().cloned() {
-            for (name, id) in new_names.iter() {
+            for (name, id) in &new_names {
                 tracing::debug!(
                     "Advertising service {name} with id {id} to client {}",
                     client.addr
@@ -1524,12 +1521,12 @@ impl Server {
 
         // Prepare an unadvertisement.
         let msg = Message::text(protocol::server::unadvertise_services(
-            &old_services.keys().cloned().collect::<Vec<_>>(),
+            &old_services.keys().copied().collect::<Vec<_>>(),
         ));
 
         let clients = self.clients.get();
         for client in clients.iter().cloned() {
-            for (id, name) in old_services.iter() {
+            for (id, name) in &old_services {
                 tracing::debug!(
                     "Unadvertising service {name} with id {id} to client {}",
                     client.addr
@@ -1631,7 +1628,7 @@ impl LogSink for Server {
         let clients = self.clients.get();
         for client in clients.iter() {
             let subscriptions = client.subscriptions.lock();
-            let Some(subscription_id) = subscriptions.get_by_left(&channel.id).cloned() else {
+            let Some(subscription_id) = subscriptions.get_by_left(&channel.id).copied() else {
                 continue;
             };
 
@@ -1653,17 +1650,13 @@ impl LogSink for Server {
     /// Server has an available channel. Advertise to all clients.
     fn add_channel(&self, channel: &Arc<Channel>) {
         let server = self.arc();
-        let ch = channel.clone();
-        self.runtime
-            .spawn(async move { server.advertise_channel(ch).await });
+        server.advertise_channel(channel);
     }
 
     /// A channel is being removed. Unadvertise to all clients.
     fn remove_channel(&self, channel: &Channel) {
         let server = self.arc();
-        let channel_id = channel.id();
-        self.runtime
-            .spawn(async move { server.unadvertise_channel(channel_id).await });
+        server.unadvertise_channel(channel.id());
     }
 }
 
