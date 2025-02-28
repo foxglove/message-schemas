@@ -8,6 +8,7 @@ use std::sync::atomic::{AtomicU32, AtomicU64};
 use std::sync::Arc;
 
 /// ChannelBuilder is a builder for creating a new [`Channel`] or [`TypedChannel`].
+#[must_use]
 pub struct ChannelBuilder<'a> {
     topic: String,
     message_encoding: Option<String>,

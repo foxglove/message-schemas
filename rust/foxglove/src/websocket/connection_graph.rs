@@ -69,7 +69,7 @@ impl ConnectionGraph {
         let mut diff = ConnectionGraphDiff::new();
 
         // Get new or changed published topics
-        for (name, publisher_ids) in replacement_graph.published_topics.iter() {
+        for (name, publisher_ids) in &replacement_graph.published_topics {
             if let Some(self_publisher_ids) = self.published_topics.get(name) {
                 if self_publisher_ids == publisher_ids {
                     // No change
@@ -84,7 +84,7 @@ impl ConnectionGraph {
         }
 
         // Get new or changed subscribed topics
-        for (name, subscriber_ids) in replacement_graph.subscribed_topics.iter() {
+        for (name, subscriber_ids) in &replacement_graph.subscribed_topics {
             if let Some(self_subscriber_ids) = self.subscribed_topics.get(name) {
                 if self_subscriber_ids == subscriber_ids {
                     // No change
@@ -99,7 +99,7 @@ impl ConnectionGraph {
         }
 
         // Get new or changed advertised services
-        for (name, provider_ids) in replacement_graph.advertised_services.iter() {
+        for (name, provider_ids) in &replacement_graph.advertised_services {
             if let Some(self_provider_ids) = self.advertised_services.get(name) {
                 if self_provider_ids == provider_ids {
                     // No change
