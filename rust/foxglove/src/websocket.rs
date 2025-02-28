@@ -877,6 +877,7 @@ impl ConnectedClient {
             let asset_responder = AssetResponder::new(Client::new(self), request_id, guard);
             handler.fetch(uri, asset_responder);
         } else {
+            tracing::error!("Server advertisd the Assets capability without providing a handler");
             self.send_asset_error("Server does not have a fetch asset handler", request_id);
         }
     }
