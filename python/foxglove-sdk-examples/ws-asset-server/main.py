@@ -2,7 +2,6 @@ import logging
 import time
 
 import foxglove
-from foxglove import Capability
 
 
 def asset_handler(uri: str) -> bytes | None:
