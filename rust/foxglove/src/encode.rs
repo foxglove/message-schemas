@@ -1,6 +1,6 @@
 use crate::{Channel, ChannelBuilder, FoxgloveError, PartialMetadata, Schema};
 use bytes::BufMut;
-use schemars::{gen::SchemaSettings, JsonSchema};
+use schemars::{r#gen::SchemaSettings, JsonSchema};
 use serde::Serialize;
 use std::{borrow::Cow, sync::Arc};
 

@@ -647,22 +647,26 @@ impl ConnectedClient {
             return;
         }
 
-        let updated_parameters = if let Some(handler) = self.server_listener.as_ref() {
-            let request_id = request_id.as_deref();
-            let updated_parameters =
-                handler.on_set_parameters(Client(self), parameters, request_id);
-            // Send all the updated_parameters back to the client if request_id is provided.
-            // This is the behavior of the reference Python server implementation.
-            if request_id.is_some() {
-                let message = protocol::server::parameters_json(&updated_parameters, request_id);
-                self.send_control_msg(Message::text(message));
+        let updated_parameters = match self.server_listener.as_ref() {
+            Some(handler) => {
+                let request_id = request_id.as_deref();
+                let updated_parameters =
+                    handler.on_set_parameters(Client(self), parameters, request_id);
+                // Send all the updated_parameters back to the client if request_id is provided.
+                // This is the behavior of the reference Python server implementation.
+                if request_id.is_some() {
+                    let message =
+                        protocol::server::parameters_json(&updated_parameters, request_id);
+                    self.send_control_msg(Message::text(message));
+                }
+                updated_parameters
             }
-            updated_parameters
-        } else {
-            // This differs from the Python legacy ws-protocol implementation in that here we notify
-            // subscribers about the parameters even if there's no ServerListener configured.
-            // This seems to be a more sensible default.
-            parameters
+            _ => {
+                // This differs from the Python legacy ws-protocol implementation in that here we notify
+                // subscribers about the parameters even if there's no ServerListener configured.
+                // This seems to be a more sensible default.
+                parameters
+            }
         };
         server.publish_parameter_values(updated_parameters);
     }
@@ -1336,16 +1340,19 @@ impl Server {
             let msg = Message::text(protocol::server::advertise_services(
                 services.iter().map(|s| s.as_ref()),
             ));
-            if let Err(err) = sender.send(msg).await {
-                tracing::error!("Error advertising services: {err}");
-            } else {
-                for service in services {
-                    tracing::debug!(
-                        "Advertised service {} with id {} to client {}",
-                        service.name(),
-                        service.id(),
-                        client.addr
-                    );
+            match sender.send(msg).await {
+                Err(err) => {
+                    tracing::error!("Error advertising services: {err}");
+                }
+                _ => {
+                    for service in services {
+                        tracing::debug!(
+                            "Advertised service {} with id {} to client {}",
+                            service.name(),
+                            service.id(),
+                            client.addr
+                        );
+                    }
                 }
             }
         }

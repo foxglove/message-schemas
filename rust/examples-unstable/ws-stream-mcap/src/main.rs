@@ -96,20 +96,21 @@ where
     R: Read + Seek,
     F: FnMut(Record<'_>) -> Result<()>,
 {
-    if let Some(action) = reader.next_action() {
-        match action? {
-            ReadAction::NeedMore(count) => {
-                let count = file.read(reader.insert(count))?;
-                reader.set_written(count);
+    match reader.next_action() {
+        Some(action) => {
+            match action? {
+                ReadAction::NeedMore(count) => {
+                    let count = file.read(reader.insert(count))?;
+                    reader.set_written(count);
+                }
+                ReadAction::GetRecord { data, opcode } => {
+                    let record = mcap::parse_record(opcode, data)?;
+                    handle_record(record)?;
+                }
             }
-            ReadAction::GetRecord { data, opcode } => {
-                let record = mcap::parse_record(opcode, data)?;
-                handle_record(record)?;
-            }
+            Ok(true)
         }
-        Ok(true)
-    } else {
-        Ok(false)
+        _ => Ok(false),
     }
 }
 

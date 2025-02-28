@@ -21,3 +21,12 @@ tokio = { version = "1.40", features = ["macros", "rt-multi-thread", "signal", "
 tokio-tungstenite = "0.26"
 tokio-util = { version = "0.7", features = ["rt"] }
 tracing = { version = "0.1", features = ["log"] }
+
+[workspace.lints.rust]
+# Group to warn about changes coming in Rust 2024 edition. Having this on will make a future
+# transition smoother. Lowering the piority allows overriding individual lints in the group.
+rust-2024-compatibility = { level = "warn", priority = -1 }
+
+# `cargo fix --edition` cannot rewrite code to fix this lint, and disabling it on a per-line basis
+# does not work, so just disabling it globally for now
+tail-expr-drop-order = "allow"
