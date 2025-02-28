@@ -186,12 +186,19 @@ def start_server(
     Start a websocket server for live visualization.
 
     :param name: The name of the server.
+    :type name: Optional[str]
     :param host: The host to bind to.
+    :type host: Optional[str]
     :param port: The port to bind to.
+    :type port: Optional[int]
     :param capabilities: A list of capabilities to advertise to clients.
+    :type capabilities: Optional[List[Capability]]
     :param server_listener: A Python object that implements the :py:class:`ServerListener` protocol.
+    :type server_listener: Optional[ServerListener]
     :param supported_encodings: A list of encodings to advertise to clients.
+    :type supported_encodings: Optional[List[str]]
     :param services: A list of services to advertise to clients.
+    :type services: Optional[List[Service]]
     """
     return _start_server(
         name=name,

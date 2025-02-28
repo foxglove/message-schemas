@@ -152,7 +152,7 @@ class ParameterValue:
         def __new__(cls, value: float) -> "ParameterValue.Number": ...
 
     class Bytes:
-        """A byte array, encoded as a base64-encoded string."""
+        """A byte array."""
 
         def __new__(cls, value: bytes) -> "ParameterValue.Bytes": ...
 
