@@ -78,6 +78,7 @@ class Capability(Enum):
     A capability that the websocket server advertises to its clients.
     """
 
+    Assets = ...
     ClientPublish = ...
     Parameters = ...
     Services = ...
@@ -156,7 +157,9 @@ AnyParameterValue = Union[
     ParameterValue.Dict,
 ]
 
-class Request:
+AssetHandler = Callable[[str], Optional[bytes]]
+
+class ServiceRequest:
     """
     A websocket service request.
     """
@@ -167,7 +170,7 @@ class Request:
     encoding: str
     payload: bytes
 
-ServiceHandler = Callable[["Request"], bytes]
+ServiceHandler = Callable[["ServiceRequest"], bytes]
 
 class Service:
     """
@@ -243,6 +246,7 @@ def start_server(
     server_listener: Any = None,
     supported_encodings: Optional[List[str]] = None,
     services: Optional[List["Service"]] = None,
+    asset_handler: Optional["AssetHandler"] = None,
 ) -> WebSocketServer:
     """
     Start a websocket server for live visualization.

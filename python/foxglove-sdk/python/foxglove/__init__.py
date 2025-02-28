@@ -18,9 +18,9 @@ from ._foxglove_py import (
     Parameter,
     ParameterType,
     ParameterValue,
-    Request,
     Schema,
     Service,
+    ServiceRequest,
     ServiceSchema,
     StatusLevel,
     WebSocketServer,
@@ -139,7 +139,9 @@ class ServerListener(Protocol):
         return None
 
 
-ServiceHandler = Callable[["Request"], bytes]
+ServiceHandler = Callable[["ServiceRequest"], bytes]
+
+AssetHandler = Callable[[str], Optional[bytes]]
 
 
 def start_server(
@@ -150,6 +152,7 @@ def start_server(
     server_listener: Optional[ServerListener] = None,
     supported_encodings: Optional[List[str]] = None,
     services: Optional[List[Service]] = None,
+    asset_handler: Optional[AssetHandler] = None,
 ) -> WebSocketServer:
     """
     Start a websocket server for live visualization.
@@ -161,6 +164,7 @@ def start_server(
     :param server_listener: A Python object that implements the :py:class:`ServerListener` protocol.
     :param supported_encodings: A list of encodings to advertise to clients.
     :param services: A list of services to advertise to clients.
+    :param asset_handler: A callback function that returns the asset bytes for a given URI.
     """
     return _start_server(
         name=name,
@@ -170,6 +174,7 @@ def start_server(
         server_listener=server_listener,
         supported_encodings=supported_encodings,
         services=services,
+        asset_handler=asset_handler,
     )
 
 
@@ -226,12 +231,12 @@ __all__ = [
     "Parameter",
     "ParameterType",
     "ParameterValue",
-    "Request",
     "Schema",
     "SchemaDefinition",
     "ServerListener",
     "Service",
     "ServiceHandler",
+    "ServiceRequest",
     "ServiceSchema",
     "StatusLevel",
     "WebSocketServer",
