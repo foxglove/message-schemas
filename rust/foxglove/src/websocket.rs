@@ -423,7 +423,7 @@ impl ConnectedClient {
             let mut sender = self.sender.lock().await;
             let status = Status::new(
                 StatusLevel::Error,
-                "disconnected becaue message backlog is full, consider increasing it".to_string(),
+                "disconnected because message backlog is full, consider increasing it".to_string(),
             );
             let message = Message::text(serde_json::to_string(&status).unwrap());
             _ = sender.send(message).await;
