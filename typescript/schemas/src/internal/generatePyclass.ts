@@ -22,9 +22,9 @@ export function generateSchemaPrelude(): string {
   ];
 
   const imports = [
+    "use crate::schemas_wkt::{Duration, Timestamp};",
     "use pyo3::prelude::*;",
     "use pyo3::types::PyBytes;",
-    "use crate::schemas_wkt::{Duration, Timestamp};",
   ];
 
   const outputSections = [docs.join("\n"), imports.join("\n")];
@@ -48,7 +48,9 @@ export function generatePySchemaStub(schemas: FoxgloveSchema[]): string {
     "from enum import Enum",
     "from typing import List, Optional",
     "",
-    "from .schemas_wkt import Duration, Timestamp",
+    // Use "from mod import X as X" syntax to explicitly re-export.
+    "from .schemas_wkt import Duration as Duration",
+    "from .schemas_wkt import Timestamp as Timestamp",
   ].join("\n") + "\n";
 
   const enums = schemas

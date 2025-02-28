@@ -2,7 +2,8 @@
 from enum import Enum
 from typing import List, Optional
 
-from .schemas_wkt import Duration, Timestamp
+from .schemas_wkt import Duration as Duration
+from .schemas_wkt import Timestamp as Timestamp
 
 #
 # Enums
