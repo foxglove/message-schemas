@@ -5,7 +5,6 @@ use foxglove::{
 use generated::channels;
 use generated::schemas;
 use log::LevelFilter;
-use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use std::collections::BTreeMap;
 use std::fs::File;
@@ -13,13 +12,14 @@ use std::io::BufWriter;
 use std::path::PathBuf;
 use std::sync::Arc;
 use websocket_server::{
-    start_server, PyCapability, PyChannelView, PyClient, PyMessageSchema, PyParameter,
-    PyParameterType, PyParameterValue, PySchema, PyService, PyServiceRequest, PyServiceSchema,
-    PyStatusLevel, PyWebSocketServer,
+    start_server, PyCapability, PyChannelView, PyClient, PyConnectionGraph, PyMessageSchema,
+    PyParameter, PyParameterType, PyParameterValue, PySchema, PyService, PyServiceRequest,
+    PyServiceSchema, PyStatusLevel, PyWebSocketServer,
 };
 
 mod errors;
 mod generated;
+mod schemas_wkt;
 mod websocket_server;
 
 #[pyclass(module = "foxglove")]
@@ -76,43 +76,17 @@ impl PyMcapWriter {
 impl BaseChannel {
     #[new]
     #[pyo3(
-        signature = (topic, message_encoding, schema_name, schema_encoding=None, schema_data=None, metadata=None)
+        signature = (topic, message_encoding, schema=None, metadata=None)
     )]
     fn new(
         topic: &str,
         message_encoding: &str,
-        schema_name: Option<String>,
-        schema_encoding: Option<String>,
-        schema_data: Option<Vec<u8>>,
+        schema: Option<PySchema>,
         metadata: Option<BTreeMap<String, String>>,
     ) -> PyResult<Self> {
-        let schema = match (
-            schema_name,
-            schema_encoding.filter(|s| !s.is_empty()),
-            schema_data.filter(|s| !s.is_empty()),
-        ) {
-            (Some(name), Some(encoding), Some(data)) => Some(Schema::new(name, encoding, data)),
-            (_, None, None) => None,
-            (_, None, Some(_)) => {
-                return Err(PyValueError::new_err(
-                    "Schema encoding must be provided if schema data is provided.",
-                ));
-            }
-            (_, Some(_), None) => {
-                return Err(PyValueError::new_err(
-                    "Schema data must be provided if schema encoding is provided.",
-                ));
-            }
-            _ => {
-                return Err(PyValueError::new_err(
-                    "Schema name must be provided if schema data or encoding is provided.",
-                ));
-            }
-        };
-
         let channel = ChannelBuilder::new(topic)
             .message_encoding(message_encoding)
-            .schema(schema)
+            .schema(schema.map(Schema::from))
             .metadata(metadata.unwrap_or_default())
             .build()
             .map_err(PyFoxgloveError::from)?;
@@ -225,6 +199,7 @@ fn _foxglove_py(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyParameterType>()?;
     m.add_class::<PyParameterValue>()?;
     m.add_class::<PyStatusLevel>()?;
+    m.add_class::<PyConnectionGraph>()?;
     // Services
     m.add_class::<PyService>()?;
     m.add_class::<PyServiceRequest>()?;
