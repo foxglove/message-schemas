@@ -304,8 +304,8 @@ async fn test_log_only_to_subscribers() {
         .await
         .expect("Failed to start server");
 
-    let mut client1 = connect_client(addr.clone()).await;
-    let mut client2 = connect_client(addr.clone()).await;
+    let mut client1 = connect_client(addr).await;
+    let mut client2 = connect_client(addr).await;
     let mut client3 = connect_client(addr).await;
 
     // client1 subscribes to ch1; client2 subscribes to ch2; client3 unsubscribes from all
@@ -648,7 +648,7 @@ async fn test_remove_status() {
         .await
         .expect("Failed to start server");
 
-    let mut ws_client1 = connect_client(addr.clone()).await;
+    let mut ws_client1 = connect_client(addr).await;
     let mut ws_client2 = connect_client(addr).await;
 
     _ = ws_client1.next().await.expect("No serverInfo sent");
@@ -1095,7 +1095,7 @@ async fn test_services() {
         .await
         .expect("Failed to start server");
 
-    let mut client1 = connect_client(addr.clone()).await;
+    let mut client1 = connect_client(addr).await;
     let _ = client1.next().await.expect("No serverInfo sent").unwrap();
     let msg = client1
         .next()
@@ -1209,7 +1209,7 @@ async fn test_services() {
     );
 
     // New client sees both services immediately.
-    let mut client2 = connect_client(addr.clone()).await;
+    let mut client2 = connect_client(addr).await;
     let _ = client2.next().await.expect("No serverInfo sent").unwrap();
     let msg = client2
         .next()
@@ -1419,9 +1419,9 @@ async fn test_update_connection_graph() {
 
 /// Connect to a server, ensuring the protocol header is set, and return the client WS stream
 pub async fn connect_client(
-    addr: String,
+    addr: SocketAddr,
 ) -> tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>> {
-    let mut request = format!("ws://{addr}/")
+    let mut request = format!("ws://{}/", addr)
         .into_client_request()
         .expect("Failed to build request");
 

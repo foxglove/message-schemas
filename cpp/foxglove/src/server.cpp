@@ -11,4 +11,8 @@ void WebSocketServer::stop() {
   foxglove_server_stop(_impl.get());
 }
 
+uint16_t WebSocketServer::port() const {
+  return foxglove_server_get_port(_impl.get());
+}
+
 }  // namespace foxglove

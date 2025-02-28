@@ -210,6 +210,8 @@ pub(crate) struct Server {
     /// It's analogous to the mixin shared_from_this in C++.
     weak_self: Weak<Self>,
     started: AtomicBool,
+    /// Local address the server is listening on, once it has been started
+    local_address: parking_lot::RwLock<Option<SocketAddr>>,
     message_backlog_size: u32,
     runtime: Handle,
     /// May be provided by the caller
@@ -1045,6 +1047,7 @@ impl Server {
 
         Server {
             weak_self,
+            local_address: parking_lot::RwLock::new(None),
             started: AtomicBool::new(false),
             message_backlog_size: opts
                 .message_backlog_size
@@ -1074,13 +1077,17 @@ impl Server {
             .expect("server cannot be dropped while in use")
     }
 
+    pub(crate) fn local_address(&self) -> Option<SocketAddr> {
+        *self.local_address.read()
+    }
+
     // Returns a handle to the async runtime that this server is using.
     pub fn runtime(&self) -> &Handle {
         &self.runtime
     }
 
-    // Spawn a task to accept all incoming connections and return
-    pub async fn start(&self, host: &str, port: u16) -> Result<String, FoxgloveError> {
+    // Spawn a task to accept all incoming connections and return the server's local address
+    pub async fn start(&self, host: &str, port: u16) -> Result<SocketAddr, FoxgloveError> {
         if self.started.load(Acquire) {
             return Err(FoxgloveError::ServerAlreadyStarted);
         }
@@ -1091,10 +1098,8 @@ impl Server {
         let listener = TcpListener::bind(&addr)
             .await
             .map_err(FoxgloveError::Bind)?;
-        let bound_addr = listener
-            .local_addr()
-            .map_err(|err| FoxgloveError::Unspecified(err.into()))?
-            .to_string();
+        let local_addr = listener.local_addr().map_err(FoxgloveError::Bind)?;
+        *self.local_address.write() = Some(local_addr);
 
         let cancellation_token = self.cancellation_token.clone();
         let server = self.arc().clone();
@@ -1107,9 +1112,9 @@ impl Server {
             }
         });
 
-        tracing::info!("Started server on {}", bound_addr);
+        tracing::info!("Started server on {}", local_addr);
 
-        Ok(bound_addr)
+        Ok(local_addr)
     }
 
     pub async fn stop(&self) {
@@ -1121,6 +1126,7 @@ impl Server {
             return;
         }
         tracing::info!("Shutting down");
+        *self.local_address.write() = None;
         let clients = self.clients.get();
         for client in clients.iter() {
             let mut sender = client.sender.lock().await;

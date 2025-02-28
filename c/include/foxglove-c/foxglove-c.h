@@ -23,12 +23,19 @@ extern "C" {
 /**
  * Create and start a server. The server must later be freed with `foxglove_server_free`.
  *
+ * `port` may be 0, in which case an available port will be automatically selected.
+ *
  * # Safety
  * `name` and `host` must be null-terminated strings with valid UTF8.
  */
 struct foxglove_websocket_server *foxglove_server_start(const char *name,
                                                         const char *host,
                                                         uint16_t port);
+
+/**
+ * Get the port on which the server is listening.
+ */
+uint16_t foxglove_server_get_port(const struct foxglove_websocket_server *server);
 
 /**
  * Free a server created via `foxglove_server_start`.

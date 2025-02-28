@@ -22,7 +22,7 @@ int main(int argc, const char* argv[]) {
   options.host = "127.0.0.1";
   options.port = 8765;
   foxglove::WebSocketServer server{options};
-  std::cerr << "Started server" << std::endl;
+  std::cerr << "Server listening on port " << server.port() << std::endl;
 
   std::atomic_bool done = false;
   sigintHandler = [&] {

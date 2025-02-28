@@ -8,6 +8,8 @@ pub struct FoxgloveWebSocketServer(Option<foxglove::WebSocketServerBlockingHandl
 
 /// Create and start a server. The server must later be freed with `foxglove_server_free`.
 ///
+/// `port` may be 0, in which case an available port will be automatically selected.
+///
 /// # Safety
 /// `name` and `host` must be null-terminated strings with valid UTF8.
 #[unsafe(no_mangle)]
@@ -24,6 +26,18 @@ pub unsafe extern "C" fn foxglove_server_start(
             .start_blocking()
             .expect("Server failed to start"),
     ))))
+}
+
+/// Get the port on which the server is listening.
+#[unsafe(no_mangle)]
+pub extern "C" fn foxglove_server_get_port(server: Option<&FoxgloveWebSocketServer>) -> u16 {
+    let Some(server) = server else {
+        panic!("Expected a non-null server");
+    };
+    let Some(ref handle) = server.0 else {
+        panic!("Server already stopped");
+    };
+    handle.local_address().map(|addr| addr.port()).unwrap_or(0)
 }
 
 /// Free a server created via `foxglove_server_start`.

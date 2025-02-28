@@ -6,12 +6,13 @@
 
 We use [Poetry](https://python-poetry.org/) to manage dependencies.
 
-Install Poetry:
+Install Poetry and Maturin:
 
 ```sh
 brew install pipx
 pipx ensurepath
 pipx install poetry
+pipx install maturin
 ```
 
 Install dependencies
@@ -46,6 +47,12 @@ PEP8 check:
 
 ```sh
 poetry run flake8 .
+```
+
+Run unit tests:
+
+```sh
+cd python && poetry run python -m unittest
 ```
 
 ### Examples

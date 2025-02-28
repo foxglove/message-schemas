@@ -17,6 +17,8 @@ class TestServer(unittest.TestCase):
         Exercise the server interface; will also be checked with mypy.
         """
         server = start_server(port=0)
+        self.assertTrue(isinstance(server.port, int))
+        self.assertNotEqual(server.port, 0)
         server.publish_status("test message", StatusLevel.Info, "some-id")
         server.broadcast_time(time.time_ns())
         server.remove_status(["some-id"])

@@ -53,6 +53,8 @@ impl WebSocketServer {
 
     /// Bind a TCP port.
     ///
+    /// `port` may be 0, in which case an available port will be automatically selected.
+    ///
     /// By default, the server will bind to `127.0.0.1:8765`.
     pub fn bind(mut self, host: impl Into<String>, port: u16) -> Self {
         self.host = host.into();
@@ -212,6 +214,13 @@ impl WebSocketServerHandle {
         self.0.runtime()
     }
 
+    /// Returns the local address that the server is listening on.
+    pub fn local_address(&self) -> Result<std::net::SocketAddr, FoxgloveError> {
+        self.0
+            .local_address()
+            .ok_or(FoxgloveError::ServerNotStarted)
+    }
+
     /// Advertises support for the provided services.
     ///
     /// These services will be available for clients to use until they are removed with
@@ -289,6 +298,11 @@ impl WebSocketServerHandle {
 pub struct WebSocketServerBlockingHandle(WebSocketServerHandle);
 
 impl WebSocketServerBlockingHandle {
+    /// Returns the local address that the server is listening on.
+    pub fn local_address(&self) -> Result<std::net::SocketAddr, FoxgloveError> {
+        self.0.local_address()
+    }
+
     /// Advertises support for the provided services.
     ///
     /// These services will be available for clients to use until they are removed with
