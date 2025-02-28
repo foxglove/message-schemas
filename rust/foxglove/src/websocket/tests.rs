@@ -1417,6 +1417,52 @@ async fn test_update_connection_graph() {
     server.stop().await;
 }
 
+#[traced_test]
+#[tokio::test]
+async fn test_slow_client() {
+    let server = create_server(ServerOptions {
+        message_backlog_size: Some(1),
+        ..Default::default()
+    });
+    let addr = server
+        .start("127.0.0.1", 0)
+        .await
+        .expect("Failed to start server");
+
+    let mut ws_client = connect_client(addr).await;
+
+    // Publish more status messages than the client can handle
+    for i in 0..10 {
+        let status = Status::new(StatusLevel::Error, format!("msg{}", i));
+        server.publish_status(status);
+    }
+
+    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+
+    _ = ws_client.next().await.expect("No serverInfo sent");
+
+    // Client should have been disconencted
+    let msg = ws_client.next().await.expect("No message received");
+    let msg = msg.expect("Failed to parse message");
+    let text = msg.into_text().expect("Failed to get message text");
+    let msg: Value = serde_json::from_str(&text).expect("Failed to parse message");
+    assert_eq!(msg["op"], "status");
+    assert_eq!(msg["level"], 2);
+    assert_eq!(
+        msg["message"],
+        "disconnected becaue message backlog is full, consider increasing it"
+    );
+
+    // Close message should be received
+    let msg = ws_client.next().await.expect("No message received");
+    let msg = msg.expect("Failed to parse message");
+    assert!(msg.is_close());
+
+    // Client should be closed
+    assert!(ws_client.next().await.is_none());
+    server.stop().await;
+}
+
 /// Connect to a server, ensuring the protocol header is set, and return the client WS stream
 pub async fn connect_client(
     addr: String,
