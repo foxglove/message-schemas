@@ -7,7 +7,7 @@ from math import cos, sin
 
 import foxglove
 import numpy as np
-from foxglove import Capability, SchemaDefinition
+from foxglove import Capability, ChannelSchema, Schema
 from foxglove.channels import (
     FrameTransformsChannel,
     PointCloudChannel,
@@ -111,11 +111,13 @@ def main() -> None:
     # Log messages with a custom schema and any encoding
     sin_chan = foxglove.Channel(
         topic="/sine",
-        schema=SchemaDefinition(
-            name="sine",
-            schema_encoding="jsonschema",
+        schema=ChannelSchema(
             message_encoding="json",
-            schema_data=json.dumps(plot_schema).encode("utf-8"),
+            schema=Schema(
+                name="sine",
+                encoding="jsonschema",
+                data=json.dumps(plot_schema).encode("utf-8"),
+            ),
         ),
     )
 

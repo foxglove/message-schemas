@@ -1,37 +1,26 @@
 import json
 from typing import Any, Dict, Optional, Union
 
-from ._foxglove_py import BaseChannel, channels
+from ._foxglove_py import BaseChannel, Schema, channels
 
 JsonSchema = Dict[str, Any]
 JsonMessage = Dict[str, Any]
 
 
-class SchemaDefinition:
+class ChannelSchema:
     """
     A custom schema definition for consumption by Foxglove.
 
     To use Foxglove well-known schemas, use existing Channel and schema definitions.
     """
 
-    __slots__ = ["name", "schema_encoding", "message_encoding", "schema_data"]
-    name: str
+    __slots__ = ["message_encoding", "schema"]
     message_encoding: str
-    schema_encoding: str
-    schema_data: bytes
+    schema: Optional[Schema]
 
-    def __init__(
-        self,
-        name: str,
-        *,
-        schema_encoding: str,
-        message_encoding: str,
-        schema_data: bytes,
-    ):
-        self.name = name
-        self.schema_encoding = schema_encoding
+    def __init__(self, *, message_encoding: str, schema: Optional[Schema]):
         self.message_encoding = message_encoding
-        self.schema_data = schema_data
+        self.schema = schema
 
 
 class Channel:
@@ -47,13 +36,13 @@ class Channel:
         self,
         topic: str,
         *,
-        schema: Union[JsonSchema, SchemaDefinition],
+        schema: Union[JsonSchema, ChannelSchema],
     ):
         """
         Create a new channel for logging messages on a topic.
 
         :param topic: the topic name.
-        :param schema: a definition of your schema. Pass a `SchemaDefinition` for full control. If a
+        :param schema: a definition of your schema. Pass a `ChannelSchema` for full control. If a
             dictionary is passed, it will be treated as a JSON schema.
 
         :raises KeyError: if a channel already exists for the given topic.
@@ -67,10 +56,8 @@ class Channel:
 
         self.base = BaseChannel(
             topic,
-            schema_encoding=schema.schema_encoding,
-            schema_name=schema.name,
-            message_encoding=schema.message_encoding,
-            schema_data=schema.schema_data,
+            schema.message_encoding,
+            schema.schema,
         )
 
         _channels_by_topic[topic] = self
@@ -131,18 +118,22 @@ def log(topic: str, message: Any) -> None:
     channel.log(message)
 
 
-def _normalize_schema(schema: Union[JsonSchema, SchemaDefinition]) -> SchemaDefinition:
-    if isinstance(schema, SchemaDefinition):
+def _normalize_schema(
+    schema: Union[JsonSchema, ChannelSchema],
+) -> ChannelSchema:
+    if isinstance(schema, ChannelSchema):
         return schema
     elif isinstance(schema, dict):
         if schema.get("type") != "object":
             raise ValueError("Only object schemas are supported")
 
-        return SchemaDefinition(
-            name=schema.get("title", "json_schema"),
+        return ChannelSchema(
             message_encoding="json",
-            schema_encoding="jsonschema",
-            schema_data=json.dumps(schema).encode("utf-8"),
+            schema=Schema(
+                name=schema.get("title", "json_schema"),
+                encoding="jsonschema",
+                data=json.dumps(schema).encode("utf-8"),
+            ),
         )
     else:
         raise ValueError(f"Invalid schema type: {type(schema)}")

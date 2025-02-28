@@ -59,9 +59,7 @@ class BaseChannel:
         cls,
         topic: str,
         message_encoding: str,
-        schema_name: Optional[str] = None,
-        schema_encoding: Optional[str] = None,
-        schema_data: Optional[bytes] = None,
+        schema: Optional["Schema"] = None,
         metadata: Optional[List[Tuple[str, str]]] = None,
     ) -> "BaseChannel": ...
     def log(

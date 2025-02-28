@@ -646,10 +646,10 @@ pub struct PySchema {
 impl PySchema {
     #[new]
     #[pyo3(signature = (*, name, encoding, data))]
-    fn new(name: &str, encoding: &str, data: Vec<u8>) -> Self {
-        PySchema {
-            name: name.to_string(),
-            encoding: encoding.to_string(),
+    fn new(name: String, encoding: String, data: Vec<u8>) -> Self {
+        Self {
+            name,
+            encoding,
             data,
         }
     }

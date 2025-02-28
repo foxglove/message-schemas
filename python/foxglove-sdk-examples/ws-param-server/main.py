@@ -7,7 +7,7 @@ https://docs.foxglove.dev/docs/visualization/panels/parameters
 
 import logging
 import time
-from typing import Optional
+from typing import List, Optional
 
 import foxglove
 from foxglove import Capability, Parameter, ParameterType, ParameterValue
@@ -49,13 +49,13 @@ class ParameterStore(foxglove.ServerListener):
                 self.parameters[changed_param.name] = changed_param
         return parameters
 
-    def on_parameters_subscribe(self, param_names: foxglove.List[str]) -> None:
+    def on_parameters_subscribe(self, param_names: List[str]) -> None:
         # The SDK takes care of notifying the client of the current parameters;
         # this is informational only.
         logging.debug(f"New subscriptions for: {param_names}")
         self.subscribed_param_names.update(param_names)
 
-    def on_parameters_unsubscribe(self, param_names: foxglove.List[str]) -> None:
+    def on_parameters_unsubscribe(self, param_names: List[str]) -> None:
         # The SDK takes care of notifying the client of the current parameters;
         # this is informational only.
         logging.debug(f"Remove subscriptions for: {param_names}")
