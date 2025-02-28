@@ -458,7 +458,6 @@ impl From<PyStatusLevel> for StatusLevel {
 #[pyclass(name = "Capability", module = "foxglove", eq, eq_int)]
 #[derive(Clone, PartialEq)]
 pub enum PyCapability {
-    Assets,
     /// Allow clients to advertise channels to send data messages to the server.
     ClientPublish,
     /// Allow clients to get & set parameters.
@@ -476,7 +475,6 @@ pub enum PyCapability {
 impl From<PyCapability> for foxglove::websocket::Capability {
     fn from(value: PyCapability) -> Self {
         match value {
-            PyCapability::Assets => foxglove::websocket::Capability::Assets,
             PyCapability::ClientPublish => foxglove::websocket::Capability::ClientPublish,
             PyCapability::Parameters => foxglove::websocket::Capability::Parameters,
             PyCapability::Time => foxglove::websocket::Capability::Time,

@@ -66,7 +66,8 @@ pub enum Capability {
     Time,
     /// Allow clients to call services.
     Services,
-    /// Allow clients to request assets.
+    /// Allow clients to request assets. If you supply an asset handler to the server, this
+    /// capability will be advertised automatically.
     Assets,
     /// Allow clients to subscribe and make connection graph updates
     ConnectionGraph,
