@@ -71,6 +71,7 @@ class BaseChannel:
         log_time: Optional[int] = None,
         sequence: Optional[int] = None,
     ) -> None: ...
+    def close(self) -> None: ...
 
 class Capability(Enum):
     """

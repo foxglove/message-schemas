@@ -13,7 +13,6 @@ mod handler;
 mod request;
 mod response;
 mod schema;
-mod semaphore;
 #[cfg(test)]
 mod tests;
 use handler::{AsyncHandlerFn, BlockingHandlerFn, HandlerFn};
@@ -22,7 +21,6 @@ pub use request::Request;
 pub use response::Responder;
 pub(crate) use schema::MessageSchema;
 pub use schema::ServiceSchema;
-pub(crate) use semaphore::Semaphore;
 
 /// A service ID, which uniquely identifies a service hosted by the server.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Deserialize, Serialize)]

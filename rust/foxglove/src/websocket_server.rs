@@ -1,13 +1,16 @@
 //! Websocket server
 
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
+use std::future::Future;
 use std::sync::Arc;
 
 use crate::websocket::service::Service;
 use crate::websocket::{
-    create_server, Capability, ConnectionGraph, Parameter, Server, ServerOptions, Status,
+    create_server, AssetHandler, AsyncAssetHandlerFn, BlockingAssetHandlerFn, Capability, Client,
+    ConnectionGraph, Parameter, Server, ServerOptions, Status,
 };
 use crate::{get_runtime_handle, FoxgloveError, LogContext, LogSink};
+use bytes::Bytes;
 use tokio::runtime::Handle;
 use tracing::warn;
 
@@ -68,6 +71,36 @@ impl WebSocketServer {
     /// Configure an event listener to receive client message events.
     pub fn listener(mut self, listener: Arc<dyn crate::websocket::ServerListener>) -> Self {
         self.options.listener = Some(listener);
+        self
+    }
+
+    /// Configure the handler for fetching assets.
+    /// There can only be one asset handler, exclusive with the other fetch_asset_handler methods.
+    pub fn fetch_asset_handler(mut self, handler: Box<dyn AssetHandler>) -> Self {
+        self.options.fetch_asset_handler = Some(handler);
+        self
+    }
+
+    /// Configure a synchronous, blocking function as a fetch asset handler.
+    /// There can only be one asset handler, exclusive with the other fetch_asset_handler methods.
+    pub fn fetch_asset_handler_blocking_fn<Err: Display>(
+        mut self,
+        handler: impl Fn(Client, String) -> Result<Bytes, Err> + Send + Sync + 'static,
+    ) -> Self {
+        self.options.fetch_asset_handler =
+            Some(Box::new(BlockingAssetHandlerFn(Arc::new(handler))));
+        self
+    }
+
+    /// Configure an asynchronous function as a fetch asset handler.
+    /// There can only be one asset handler, exclusive with the other fetch_asset_handler methods.
+    pub fn fetch_asset_handler_async_fn<F, Fut, Err>(mut self, handler: F) -> Self
+    where
+        F: Fn(Client, String) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = Result<Bytes, Err>> + Send + 'static,
+        Err: Display,
+    {
+        self.options.fetch_asset_handler = Some(Box::new(AsyncAssetHandlerFn(Arc::new(handler))));
         self
     }
 

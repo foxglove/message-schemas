@@ -39,24 +39,6 @@ pub(crate) enum ClientMessage {
     FetchAsset(FetchAsset),
 }
 impl ClientMessage {
-    pub fn op(&self) -> &'static str {
-        match self {
-            ClientMessage::Subscribe(_) => "subscribe",
-            ClientMessage::Unsubscribe(_) => "unsubscribe",
-            ClientMessage::Advertise(_) => "advertise",
-            ClientMessage::Unadvertise(_) => "unadvertise",
-            ClientMessage::MessageData(_) => "messageData",
-            ClientMessage::GetParameters(_) => "getParameters",
-            ClientMessage::SetParameters(_) => "setParameters",
-            ClientMessage::SubscribeParameterUpdates(_) => "subscribeParameterUpdates",
-            ClientMessage::UnsubscribeParameterUpdates(_) => "unsubscribeParameterUpdates",
-            ClientMessage::ServiceCallRequest(_) => "serviceCallRequest",
-            ClientMessage::SubscribeConnectionGraph => "subscribeConnectionGraph",
-            ClientMessage::UnsubscribeConnectionGraph => "unsubscribeConnectionGraph",
-            ClientMessage::FetchAsset(_) => "fetchAsset",
-        }
-    }
-
     pub fn parse_json(json: &str) -> Result<Self, ParseError> {
         let msg = serde_json::from_str::<JsonMessage>(json)?;
         Ok(Self::from(msg))
@@ -310,8 +292,8 @@ impl ServiceCallRequest {
 #[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct FetchAsset {
-    uri: String,
-    request_id: u32,
+    pub uri: String,
+    pub request_id: u32,
 }
 
 #[cfg(test)]
