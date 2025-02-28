@@ -322,6 +322,8 @@ pub(crate) struct ConnectedClient {
     /// Optional callback handler for a server implementation
     server_listener: Option<Arc<dyn ServerListener>>,
     server: Weak<Server>,
+    /// The cancellation_token is used by the server to disconnect the client.
+    /// It's cancelled when the client's control plane queue fills up (slow client).
     cancellation_token: CancellationToken,
     /// Whether this client is subscribed to the connection graph
     /// This is updated only with the connection_graph mutex held in on_connection_graph_subscribe and unsubscribe.
@@ -423,7 +425,8 @@ impl ConnectedClient {
             let mut sender = self.sender.lock().await;
             let status = Status::new(
                 StatusLevel::Error,
-                "disconnected because message backlog is full, consider increasing it".to_string(),
+                "Disconnected because message backlog on the server is full. The backlog size is configurable in the server setup."
+                    .to_string(),
             );
             let message = Message::text(serde_json::to_string(&status).unwrap());
             _ = sender.send(message).await;

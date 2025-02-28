@@ -1450,7 +1450,7 @@ async fn test_slow_client() {
     assert_eq!(msg["level"], 2);
     assert_eq!(
         msg["message"],
-        "disconnected because message backlog is full, consider increasing it"
+        "Disconnected because message backlog on the server is full. The backlog size is configurable in the server setup."
     );
 
     // Close message should be received
