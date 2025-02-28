@@ -174,6 +174,7 @@ ServiceHandler = Callable[["Request"], bytes]
 
 
 def start_server(
+    *,
     name: Optional[str] = None,
     host: Optional[str] = "127.0.0.1",
     port: Optional[int] = 8765,
@@ -188,17 +189,17 @@ def start_server(
     :param name: The name of the server.
     :type name: Optional[str]
     :param host: The host to bind to.
-    :type host: Optional[str]
+    :type host: Optional[str] = "127.0.0.1"
     :param port: The port to bind to.
-    :type port: Optional[int]
+    :type port: Optional[int] = 8765
     :param capabilities: A list of capabilities to advertise to clients.
-    :type capabilities: Optional[List[Capability]]
+    :type capabilities: Optional[List[Capability]] = None
     :param server_listener: A Python object that implements the :py:class:`ServerListener` protocol.
-    :type server_listener: Optional[ServerListener]
+    :type server_listener: Optional[ServerListener] = None
     :param supported_encodings: A list of encodings to advertise to clients.
-    :type supported_encodings: Optional[List[str]]
+    :type supported_encodings: Optional[List[str]] = None
     :param services: A list of services to advertise to clients.
-    :type services: Optional[List[Service]]
+    :type services: Optional[List[Service]] = None
     """
     return _start_server(
         name=name,

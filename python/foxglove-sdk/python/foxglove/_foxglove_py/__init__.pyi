@@ -258,6 +258,7 @@ class Schema:
     ) -> "Schema": ...
 
 def start_server(
+    *,
     name: Optional[str] = None,
     host: Optional[str] = "127.0.0.1",
     port: Optional[int] = 8765,
