@@ -6,13 +6,12 @@
 
 We use [Poetry](https://python-poetry.org/) to manage dependencies.
 
-Install Poetry and Maturin:
+Install Poetry:
 
 ```sh
 brew install pipx
 pipx ensurepath
 pipx install poetry
-pipx install maturin
 ```
 
 Install dependencies
