@@ -8,6 +8,9 @@ publish = false
 name = "foxglove"
 crate-type = ["staticlib", "cdylib"]
 
+[lints]
+workspace = true
+
 [dependencies]
 foxglove = { path = "../rust/foxglove", features = ["unstable"] }
 

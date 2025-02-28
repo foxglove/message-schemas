@@ -1,6 +1,7 @@
 import unittest
 
-from foxglove.channel import Channel, SchemaDefinition
+from foxglove import Schema
+from foxglove.channel import Channel
 from foxglove.channels import LogChannel
 from foxglove.schemas import Log
 
@@ -38,13 +39,15 @@ class TestChannel(unittest.TestCase):
         channel.log({"test": "test"})
 
     def test_log_must_serialize_on_protobuf_channel(self) -> None:
-        schema = SchemaDefinition(
-            "my_schema",
+        channel = Channel(
+            self.topic,
             message_encoding="protobuf",
-            schema_encoding="protobuf",
-            schema_data=b"\x01",
+            schema=Schema(
+                name="my_schema",
+                encoding="protobuf",
+                data=b"\x01",
+            ),
         )
-        channel = Channel(self.topic, schema=schema)
 
         self.assertRaisesRegex(
             ValueError, "Unsupported message type", channel.log, {"test": "test"}

@@ -76,16 +76,16 @@ impl ServerListener for ParamListener {
         );
 
         let mut params = self.param_store.lock().unwrap();
-        for param in parameters.iter_mut() {
+        for param in &mut parameters {
             if let Some(old_param) = params.get_mut(&param.name) {
                 if param.name.starts_with("read_only_") {
                     // Return the old value
-                    param.value = old_param.value.clone();
-                    param.r#type = old_param.r#type.clone();
+                    param.value.clone_from(&old_param.value);
+                    param.r#type.clone_from(&old_param.r#type);
                 } else {
                     // Update the value
-                    old_param.value = param.value.clone();
-                    old_param.r#type = param.r#type.clone();
+                    old_param.value.clone_from(&param.value);
+                    old_param.r#type.clone_from(&param.r#type);
                 }
             } else {
                 params.insert(param.name.clone(), param.clone());
