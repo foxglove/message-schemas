@@ -361,7 +361,7 @@ pub fn start_server(
     }
 
     if let Some(asset_handler) = asset_handler {
-        server = server.fetch_asset_handler(Box::new(AssetServer {
+        server = server.fetch_asset_handler(Box::new(CallbackAssetHandler {
             handler: Arc::new(asset_handler),
         }));
     }
@@ -548,17 +548,17 @@ impl From<PyCapability> for foxglove::websocket::Capability {
     }
 }
 
-/// An asset server for live visualization.
+/// Container for a user-defined asset handler.
 ///
 /// The handler must be a callback function which takes the uri as its argument, and returns the
 /// asset `bytes`. If the handler returns `None`, a "not found" message will be sent to the client.
 /// If the handler raises an exception, the stringified exception message will be returned to the
 /// client as an error.
-pub struct AssetServer {
+pub struct CallbackAssetHandler {
     handler: Arc<Py<PyAny>>,
 }
 
-impl AssetHandler for AssetServer {
+impl AssetHandler for CallbackAssetHandler {
     fn fetch(&self, uri: String, responder: foxglove::websocket::AssetResponder) {
         let handler = self.handler.clone();
 
