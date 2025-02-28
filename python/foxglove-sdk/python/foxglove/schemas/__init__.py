@@ -14,7 +14,6 @@ from foxglove._foxglove_py.schemas import (
     CompressedVideo,
     CubePrimitive,
     CylinderPrimitive,
-    Duration,
     FrameTransform,
     FrameTransforms,
     GeoJson,
@@ -48,11 +47,11 @@ from foxglove._foxglove_py.schemas import (
     SpherePrimitive,
     TextAnnotation,
     TextPrimitive,
-    Timestamp,
     TriangleListPrimitive,
     Vector2,
     Vector3,
 )
+from foxglove._foxglove_py.schemas_wkt import Duration, Timestamp
 
 __all__ = [
     "ArrowPrimitive",
