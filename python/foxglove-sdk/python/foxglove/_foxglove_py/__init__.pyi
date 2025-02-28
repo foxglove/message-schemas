@@ -72,7 +72,7 @@ class BaseChannel:
         sequence: Optional[int] = None,
     ) -> None: ...
 
-class Capability:
+class Capability(Enum):
     """
     An enumeration of capabilities that the websocket server can advertise to its clients.
     """
