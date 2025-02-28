@@ -9,15 +9,18 @@ def asset_handler(uri: str) -> bytes | None:
     This will respond to "package://" asset requests from Foxglove by reading files from disk.
     This example doesn't do any path validation or upward traversal prevention.
     """
-    logging.debug(f"Asset request: {uri}")
+    asset = None
     if uri.startswith("package://"):
         filepath = uri.replace("package://", "", 1)
         try:
             with open(filepath, "rb") as file:
-                return file.read()
+                asset = file.read()
         except FileNotFoundError:
-            return None
-    return None
+            pass
+
+    status = "OK" if asset else "Not Found"
+    logging.debug(f"asset_handler {status}: {uri}")
+    return asset
 
 
 def main() -> None:
