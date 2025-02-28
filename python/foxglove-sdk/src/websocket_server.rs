@@ -554,7 +554,7 @@ impl From<PyCapability> for foxglove::websocket::Capability {
 /// asset `bytes`. If the handler returns `None`, a "not found" message will be sent to the client.
 /// If the handler raises an exception, the stringified exception message will be returned to the
 /// client as an error.
-pub struct CallbackAssetHandler {
+struct CallbackAssetHandler {
     handler: Arc<Py<PyAny>>,
 }
 
