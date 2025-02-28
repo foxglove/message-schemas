@@ -688,7 +688,7 @@ impl From<PySchema> for foxglove::Schema {
 #[pyclass(name = "ParameterType", module = "foxglove", eq, eq_int)]
 #[derive(Clone, PartialEq)]
 pub enum PyParameterType {
-    /// A byte array, encoded as a base64-encoded string.
+    /// A byte array.
     ByteArray,
     /// A decimal or integer value that can be represented as a `float64`.
     Float64,

@@ -128,7 +128,7 @@ class ParameterType(Enum):
     """
 
     ByteArray = ...
-    """A byte array, encoded as a base64-encoded string."""
+    """A byte array."""
 
     Float64 = ...
     """A decimal or integer value that can be represented as a `float64`."""

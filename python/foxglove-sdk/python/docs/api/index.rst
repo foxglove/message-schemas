@@ -75,7 +75,7 @@ Used with the parameter service during live visualization. Requires the :py:data
 
    .. py:data:: ByteArray
 
-      A byte array, encoded as a base64-encoded string.
+      A byte array.
 
    .. py:data:: Float64
 
@@ -97,7 +97,7 @@ Used with the parameter service during live visualization. Requires the :py:data
 
    .. py:class:: Bytes(value: bytes)
 
-      A byte array
+      A byte array.
 
    .. py:class:: Array(value: list[ParameterValue])
 
