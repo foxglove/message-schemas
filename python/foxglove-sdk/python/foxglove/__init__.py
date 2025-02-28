@@ -183,8 +183,8 @@ class ServerListener(Protocol):
         return None
 
 
+# Redefine types from the stub interface so they're available for documentation.
 ServiceHandler = Callable[["ServiceRequest"], bytes]
-
 AssetHandler = Callable[[str], Optional[bytes]]
 
 
@@ -216,8 +216,9 @@ def start_server(
     :type supported_encodings: Optional[List[str]] = None
     :param services: A list of services to advertise to clients.
     :type services: Optional[List[Service]] = None
-    :param asset_handler: A callback function that returns the asset bytes for a given URI.
-    :type asset_handler: Optional[AssetHandler] = None
+    :param asset_handler: A callback function that returns the asset for a given URI, or None if
+        it doesn't exist.
+    :type asset_handler: Optional[:py:class:`AssetHandler`] = None
     """
     return _start_server(
         name=name,

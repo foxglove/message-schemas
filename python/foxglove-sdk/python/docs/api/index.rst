@@ -106,3 +106,20 @@ Used with the parameter service during live visualization. Requires the :py:data
    .. py:class:: Dict(value: dict[str, ParameterValue])
 
       An associative map of parameter values.
+
+Asset handling
+^^^^^^^^^^^^^^
+
+You can provide an optional :py:class:`AssetHandler` to :py:func:`start_server` to serve assets such
+as URDFs for live visualization. The asset handler is a :py:class:`Callable` that returns the asset
+for a given URI, or None if it doesn't exist.
+
+Foxglove assets will be requested with the `package://` scheme.
+See https://docs.foxglove.dev/docs/visualization/panels/3d#resolution-of-urdf-assets-with-package-urls
+
+This handler will be run on a separate thread; a typical implementation will load the asset from
+disk and return its contents.
+
+See the Asset Server example for more information.
+
+.. autoclass:: foxglove.AssetHandler
