@@ -30,7 +30,6 @@ def main() -> None:
     try:
         while True:
             # Send transforms for the model as needed, on a `FrameTransformsChannel`
-            print("sleeping")
             time.sleep(1)
 
     except KeyboardInterrupt:
