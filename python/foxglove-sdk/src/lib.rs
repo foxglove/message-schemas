@@ -19,6 +19,7 @@ use websocket_server::{
 
 mod errors;
 mod generated;
+mod schemas_wkt;
 mod websocket_server;
 
 #[pyclass(module = "foxglove")]

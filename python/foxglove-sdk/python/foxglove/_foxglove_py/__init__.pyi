@@ -73,13 +73,20 @@ class BaseChannel:
 
 class Capability(Enum):
     """
-    A capability that the websocket server advertises to its clients.
+    An enumeration of capabilities that the websocket server can advertise to its clients.
     """
 
     ClientPublish = ...
+    """Allow clients to advertise channels to send data messages to the server."""
+
     Parameters = ...
+    """Allow clients to get & set parameters."""
+
     Services = ...
+    """Allow clients to call services."""
+
     Time = ...
+    """Inform clients about the latest server time."""
 
 class Client:
     """
@@ -119,8 +126,13 @@ class ParameterType(Enum):
     """
 
     ByteArray = ...
+    """A byte array."""
+
     Float64 = ...
+    """A decimal or integer value that can be represented as a `float64`."""
+
     Float64Array = ...
+    """An array of decimal or integer values that can be represented as `float64`s."""
 
 class ParameterValue:
     """
@@ -128,20 +140,30 @@ class ParameterValue:
     """
 
     class Bool:
+        """A boolean value."""
+
         def __new__(cls, value: bool) -> "ParameterValue.Bool": ...
 
     class Number:
+        """A decimal or integer value."""
+
         def __new__(cls, value: float) -> "ParameterValue.Number": ...
 
     class Bytes:
+        """A byte array."""
+
         def __new__(cls, value: bytes) -> "ParameterValue.Bytes": ...
 
     class Array:
+        """An array of parameter values."""
+
         def __new__(
             cls, value: List["AnyParameterValue"]
         ) -> "ParameterValue.Array": ...
 
     class Dict:
+        """An associative map of parameter values."""
+
         def __new__(
             cls, value: dict[str, "AnyParameterValue"]
         ) -> "ParameterValue.Dict": ...
@@ -234,6 +256,7 @@ class Schema:
     ) -> "Schema": ...
 
 def start_server(
+    *,
     name: Optional[str] = None,
     host: Optional[str] = "127.0.0.1",
     port: Optional[int] = 8765,

@@ -350,6 +350,9 @@ impl PyWebSocketServer {
     /// Sets a new session ID and notifies all clients, causing them to reset their state.
     /// If no session ID is provided, generates a new one based on the current timestamp.
     /// If the server has been stopped, this has no effect.
+    ///
+    /// :param session_id: An optional session ID.
+    /// :type session_id: Optional[str]
     #[pyo3(signature = (session_id=None))]
     pub fn clear_session(&self, session_id: Option<String>) {
         if let Some(server) = &self.0 {
@@ -359,6 +362,10 @@ impl PyWebSocketServer {
 
     /// Publishes the current server timestamp to all clients.
     /// If the server has been stopped, this has no effect.
+    ///
+    /// :param timestamp_nanos: The timestamp to broadcast, in nanoseconds.
+    /// :type timestamp_nanos: int
+    #[pyo3(signature = (timestamp_nanos))]
     pub fn broadcast_time(&self, timestamp_nanos: u64) {
         if let Some(server) = &self.0 {
             server.broadcast_time(timestamp_nanos);
@@ -367,6 +374,13 @@ impl PyWebSocketServer {
 
     /// Send a status message to all clients.
     /// If the server has been stopped, this has no effect.
+    ///
+    /// :param message: The message to send.
+    /// :type message: str
+    /// :param level: The level of the status message.
+    /// :type level: :py:enum:`StatusLevel`
+    /// :param id: An optional id for the status message.
+    /// :type id: Optional[str]
     #[pyo3(signature = (message, level, id=None))]
     pub fn publish_status(&self, message: String, level: &PyStatusLevel, id: Option<String>) {
         let Some(server) = &self.0 else {
@@ -381,6 +395,9 @@ impl PyWebSocketServer {
 
     /// Remove status messages by id from all clients.
     /// If the server has been stopped, this has no effect.
+    ///
+    /// :param status_ids: The ids of the status messages to remove.
+    /// :type status_ids: list[str]
     pub fn remove_status(&self, status_ids: Vec<String>) {
         if let Some(server) = &self.0 {
             server.remove_status(status_ids);
@@ -388,6 +405,9 @@ impl PyWebSocketServer {
     }
 
     /// Publishes parameter values to all subscribed clients.
+    ///
+    /// :param parameters: The parameters to publish.
+    /// :type parameters: list[:py:class:`Parameter`]
     pub fn publish_parameter_values(&self, parameters: Vec<PyParameter>) {
         if let Some(server) = &self.0 {
             server.publish_parameter_values(parameters.into_iter().map(Into::into).collect());
@@ -425,7 +445,7 @@ impl PyWebSocketServer {
     }
 }
 
-/// The level of a :py:class:`Status` message
+/// A level for :py:meth:`WebSocketServer.publish_status`.
 #[pyclass(name = "StatusLevel", module = "foxglove", eq, eq_int)]
 #[derive(Clone, PartialEq)]
 pub enum PyStatusLevel {
@@ -444,7 +464,10 @@ impl From<PyStatusLevel> for StatusLevel {
     }
 }
 
-/// A capability that the websocket server advertises to its clients.
+/// An enumeration of capabilities that you may choose to support for live visualization.
+///
+/// Specify the capabilities you support when calling :py:func:`start_server`. These will be
+/// advertised to the Foxglove app when connected as a WebSocket client.
 #[pyclass(name = "Capability", module = "foxglove", eq, eq_int)]
 #[derive(Clone, PartialEq)]
 pub enum PyCapability {
@@ -661,10 +684,11 @@ impl From<PySchema> for foxglove::Schema {
     }
 }
 
+/// A parameter type.
 #[pyclass(name = "ParameterType", module = "foxglove", eq, eq_int)]
 #[derive(Clone, PartialEq)]
 pub enum PyParameterType {
-    /// A byte array, encoded as a base64-encoded string.
+    /// A byte array.
     ByteArray,
     /// A decimal or integer value that can be represented as a `float64`.
     Float64,
