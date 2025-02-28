@@ -44,7 +44,9 @@ class ServerListener(Protocol):
         Called by the server when a client subscribes to a channel.
 
         :param client: The client (id) that sent the message.
+        :type client: :py:class:`Client`
         :param channel: The channel (id, topic) that the message was sent on.
+        :type channel: :py:class:`ChannelView`
         """
         return None
 
@@ -53,7 +55,9 @@ class ServerListener(Protocol):
         Called by the server when a client unsubscribes from a channel.
 
         :param client: The client (id) that sent the message.
+        :type client: :py:class:`Client`
         :param channel: The channel (id, topic) that the message was sent on.
+        :type channel: :py:class:`ChannelView`
         """
         return None
 
@@ -62,7 +66,9 @@ class ServerListener(Protocol):
         Called by the server when a client advertises a channel.
 
         :param client: The client (id) that sent the message.
+        :type client: :py:class:`Client`
         :param channel: The channel (id, topic) that the message was sent on.
+        :type channel: :py:class:`ChannelView`
         """
         return None
 
@@ -71,7 +77,9 @@ class ServerListener(Protocol):
         Called by the server when a client unadvertises a channel.
 
         :param client: The client (id) that sent the message.
+        :type client: :py:class:`Client`
         :param channel: The channel (id, topic) that the message was sent on.
+        :type channel: :py:class:`ChannelView`
         """
         return None
 
@@ -82,8 +90,11 @@ class ServerListener(Protocol):
         Called by the server when a message is received from a client.
 
         :param client: The client (id) that sent the message.
+        :type client: :py:class:`Client`
         :param channel: The channel (id, topic) that the message was sent on.
+        :type channel: :py:class:`ChannelView`
         :param data: The message data.
+        :type data: bytes
         """
         return None
 
@@ -96,7 +107,14 @@ class ServerListener(Protocol):
         """
         Called by the server when a client requests parameters.
 
-        You must advertise the `Parameters` capability.
+        Requires :py:data:`Capability.Parameters`.
+
+        :param client: The client (id) that sent the message.
+        :type client: :py:class:`Client`
+        :param param_names: The names of the parameters to get.
+        :type param_names: list[str]
+        :param request_id: An optional request id.
+        :type request_id: Optional[str]
         """
         return []
 
@@ -111,7 +129,14 @@ class ServerListener(Protocol):
         Note that only `parameters` which have changed are included in the callback, but the return
         value must include all parameters.
 
-        You must advertise the `Parameters` capability.
+        Requires :py:data:`Capability.Parameters`.
+
+        :param client: The client (id) that sent the message.
+        :type client: :py:class:`Client`
+        :param parameters: The parameters to set.
+        :type parameters: list[:py:class:`Parameter`]
+        :param request_id: An optional request id.
+        :type request_id: Optional[str]
         """
         return parameters
 
@@ -122,7 +147,10 @@ class ServerListener(Protocol):
         """
         Called by the server when a client subscribes to one or more parameters for the first time.
 
-        You must advertise the `Parameters` capability.
+        Requires :py:data:`Capability.Parameters`.
+
+        :param param_names: The names of the parameters to subscribe to.
+        :type param_names: list[str]
         """
         return None
 
@@ -134,7 +162,10 @@ class ServerListener(Protocol):
         Called by the server when the last client subscription to one or more parameters has been
         removed.
 
-        You must advertise the `Parameters` capability.
+        Requires :py:data:`Capability.Parameters`.
+
+        :param param_names: The names of the parameters to unsubscribe from.
+        :type param_names: list[str]
         """
         return None
 
@@ -220,6 +251,7 @@ def _level_names() -> dict[str, int]:
 __all__ = [
     "Capability",
     "Channel",
+    "ChannelView",
     "Client",
     "MCAPWriter",
     "MessageSchema",
