@@ -5,7 +5,7 @@ from foxglove.schemas import Duration, Timestamp
 
 
 class TestTime(unittest.TestCase):
-    def test_duration_from_secs(self):
+    def test_duration_from_secs(self) -> None:
         self.assertEqual(Duration.from_secs(1.123), Duration(sec=1, nsec=123_000_000))
         self.assertEqual(Duration.from_secs(-0.123), Duration(sec=-1, nsec=877_000_000))
         self.assertEqual(Duration.from_secs(-1.123), Duration(sec=-2, nsec=877_000_000))
@@ -16,7 +16,7 @@ class TestTime(unittest.TestCase):
         with self.assertRaises(OverflowError):
             Duration.from_secs(1e42)
 
-    def test_duration_from_timedelta(self):
+    def test_duration_from_timedelta(self) -> None:
         td = datetime.timedelta(seconds=1, milliseconds=123)
         self.assertEqual(Duration.from_timedelta(td), Duration(sec=1, nsec=123_000_000))
 
@@ -38,7 +38,7 @@ class TestTime(unittest.TestCase):
         with self.assertRaises(OverflowError):
             Duration.from_timedelta(datetime.timedelta.max)
 
-    def test_timestamp_from_timestamp(self):
+    def test_timestamp_from_timestamp(self) -> None:
         self.assertEqual(
             Timestamp.from_timestamp(1.123), Timestamp(sec=1, nsec=123_000_000)
         )
@@ -49,7 +49,7 @@ class TestTime(unittest.TestCase):
         with self.assertRaises(OverflowError):
             Timestamp.from_timestamp(1e42)
 
-    def test_timestamp_from_datetime(self):
+    def test_timestamp_from_datetime(self) -> None:
         utc = datetime.timezone.utc
         dt = datetime.datetime(1970, 1, 1, tzinfo=utc)
         self.assertEqual(Timestamp.from_datetime(dt), Timestamp(sec=0))
