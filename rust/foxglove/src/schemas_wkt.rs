@@ -125,20 +125,18 @@ impl Duration {
                 Err(RangeError::UpperBound)
             }
         } else {
-            let sec = secs as i32;
-            let nsec = ((secs - sec as f64) * 1e9) as i32;
+            let mut sec = secs as i32;
+            let mut nsec = ((secs - sec as f64) * 1e9) as i32;
             if nsec < 0 {
-                assert!(sec <= 0);
-                Ok(Self {
-                    sec: sec - 1,
-                    nsec: u32::try_from(nsec + 1_000_000_000).expect("positive"),
-                })
-            } else {
-                Ok(Self {
-                    sec,
-                    nsec: u32::try_from(nsec).expect("positive"),
-                })
+                sec -= 1;
+                nsec += 1_000_000_000;
             }
+            Ok(Self {
+                sec,
+                nsec: u32::try_from(nsec).unwrap_or_else(|e| {
+                    panic!("expected {nsec} to be within [0, 1_000_000_000): {e}")
+                }),
+            })
         }
     }
 
