@@ -14,7 +14,7 @@ struct WebSocketServerOptions {
 
 class WebSocketServer {
 public:
-  WebSocketServer(WebSocketServerOptions options);
+  explicit WebSocketServer(WebSocketServerOptions options);
 
   // Get the port on which the server is listening.
   uint16_t port() const;
