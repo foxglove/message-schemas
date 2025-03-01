@@ -7,7 +7,7 @@ Channel::Channel(std::string topic, std::string messageEncoding, std::optional<S
     : _impl(
         foxglove_channel_create(
           topic.c_str(), messageEncoding.c_str(),
-          schema ? &((const foxglove_schema&)(foxglove_schema){
+          schema ? &((const foxglove_schema&)foxglove_schema{
                      schema->name.data(),
                      schema->encoding.data(),
                      reinterpret_cast<const uint8_t*>(schema->data),
