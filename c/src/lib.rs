@@ -85,7 +85,9 @@ pub extern "C" fn foxglove_server_stop(server: Option<&mut FoxgloveWebSocketServ
 /// Create a new channel. The channel must later be freed with `foxglove_channel_free`.
 ///
 /// # Safety
-/// `topic` and `message_encoding` must be null-terminated strings with valid UTF8.
+/// `topic` and `message_encoding` must be null-terminated strings with valid UTF8. `schema` is an
+/// optional pointer to a schema. The schema and the data it points to need only remain alive for
+/// the duration of this function call (they will be copied).
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn foxglove_channel_create(
     topic: *const c_char,

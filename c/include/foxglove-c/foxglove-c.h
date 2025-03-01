@@ -72,7 +72,9 @@ void foxglove_server_stop(struct foxglove_websocket_server *server);
  * Create a new channel. The channel must later be freed with `foxglove_channel_free`.
  *
  * # Safety
- * `topic` and `message_encoding` must be null-terminated strings with valid UTF8.
+ * `topic` and `message_encoding` must be null-terminated strings with valid UTF8. `schema` is an
+ * optional pointer to a schema. The schema and the data it points to need only remain alive for
+ * the duration of this function call (they will be copied).
  */
 struct foxglove_channel *foxglove_channel_create(const char *topic,
                                                  const char *message_encoding,
