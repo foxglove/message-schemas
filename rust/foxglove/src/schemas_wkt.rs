@@ -280,9 +280,9 @@ impl Timestamp {
         self.into()
     }
 
-    /// Creates a `Timestamp` from `f64` timestamp seconds, or fails if the value is
+    /// Creates a `Timestamp` from seconds since epoch as an `f64`, or fails if the value is
     /// unrepresentable.
-    pub fn try_from_timestamp_secs_f64(secs: f64) -> Result<Self, RangeError> {
+    pub fn try_from_epoch_secs_f64(secs: f64) -> Result<Self, RangeError> {
         if secs < 0.0 {
             Err(RangeError::LowerBound)
         } else if secs > u32::MAX as f64 {
@@ -300,9 +300,9 @@ impl Timestamp {
         }
     }
 
-    /// Saturating `Timestamp` from `f64` timestamp seconds.
-    pub fn saturating_from_timestamp_secs_f64(secs: f64) -> Self {
-        match Self::try_from_timestamp_secs_f64(secs) {
+    /// Saturating `Timestamp` from seconds since epoch as an `f64`.
+    pub fn saturating_from_epoch_secs_f64(secs: f64) -> Self {
+        match Self::try_from_epoch_secs_f64(secs) {
             Ok(d) => d,
             Err(RangeError::LowerBound) => Timestamp::MIN,
             Err(RangeError::UpperBound) => Timestamp::MAX,

@@ -38,16 +38,16 @@ class TestTime(unittest.TestCase):
         with self.assertRaises(OverflowError):
             Duration.from_timedelta(datetime.timedelta.max)
 
-    def test_timestamp_from_timestamp(self) -> None:
+    def test_timestamp_from_epoch_secs(self) -> None:
         self.assertEqual(
-            Timestamp.from_timestamp(1.123), Timestamp(sec=1, nsec=123_000_000)
+            Timestamp.from_epoch_secs(1.123), Timestamp(sec=1, nsec=123_000_000)
         )
 
         with self.assertRaises(OverflowError):
-            Timestamp.from_timestamp(-1.0)
+            Timestamp.from_epoch_secs(-1.0)
 
         with self.assertRaises(OverflowError):
-            Timestamp.from_timestamp(1e42)
+            Timestamp.from_epoch_secs(1e42)
 
     def test_timestamp_from_datetime(self) -> None:
         utc = datetime.timezone.utc

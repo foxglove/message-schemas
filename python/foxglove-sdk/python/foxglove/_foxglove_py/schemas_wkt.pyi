@@ -48,7 +48,7 @@ class Timestamp:
         nsec: Optional[int] = None,
     ) -> "Timestamp": ...
     @staticmethod
-    def from_timestamp(timestamp: float) -> "Timestamp":
+    def from_epoch_secs(timestamp: float) -> "Timestamp":
         """
         Creates a :py:class:`Timestamp` from an epoch timestamp, such as is
         returned by :py:func:`time.time` or

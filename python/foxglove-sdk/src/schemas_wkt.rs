@@ -35,8 +35,8 @@ impl Timestamp {
     /// :rtype: :py:class:`Timestamp`
     #[staticmethod]
     #[pyo3(signature = (timestamp))]
-    fn from_timestamp(timestamp: f64) -> PyResult<Self> {
-        foxglove::schemas::Timestamp::try_from_timestamp_secs_f64(timestamp)
+    fn from_epoch_secs(timestamp: f64) -> PyResult<Self> {
+        foxglove::schemas::Timestamp::try_from_epoch_secs_f64(timestamp)
             .map(Self)
             .map_err(|_| PyOverflowError::new_err("timestamp out of range"))
     }
