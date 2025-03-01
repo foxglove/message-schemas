@@ -1432,7 +1432,7 @@ async fn test_slow_client() {
     let mut ws_client = connect_client(addr).await;
 
     // Publish more status messages than the client can handle
-    for i in 0..10 {
+    for i in 0..50 {
         let status = Status::new(StatusLevel::Error, format!("msg{}", i));
         server.publish_status(status);
     }
