@@ -201,9 +201,6 @@ pub enum FoxgloveError {
     /// An unspecified error.
     #[error("{0}")]
     Unspecified(#[source] Box<dyn std::error::Error + Send + Sync + 'static>),
-    /// The server was not started.
-    #[error("Server not started")]
-    ServerNotStarted,
     /// The sink dropped a message because it is closed.
     #[error("Sink closed")]
     SinkClosed,

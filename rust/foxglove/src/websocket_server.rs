@@ -215,8 +215,8 @@ impl WebSocketServerHandle {
     }
 
     /// Returns the local port that the server is listening on.
-    pub fn local_port(&self) -> Result<u16, FoxgloveError> {
-        self.0.local_port().ok_or(FoxgloveError::ServerNotStarted)
+    pub fn port(&self) -> u16 {
+        self.0.port()
     }
 
     /// Advertises support for the provided services.
@@ -297,8 +297,8 @@ pub struct WebSocketServerBlockingHandle(WebSocketServerHandle);
 
 impl WebSocketServerBlockingHandle {
     /// Returns the local port that the server is listening on.
-    pub fn local_port(&self) -> Result<u16, FoxgloveError> {
-        self.0.local_port()
+    pub fn port(&self) -> u16 {
+        self.0.port()
     }
 
     /// Advertises support for the provided services.
