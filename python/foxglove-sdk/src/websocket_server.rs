@@ -1,10 +1,13 @@
 use crate::errors::PyFoxgloveError;
 use bytes::Bytes;
 use foxglove::{
-    websocket::{ChannelView, Client, ClientChannelView, ServerListener, Status, StatusLevel},
+    websocket::{
+        AssetHandler, ChannelView, Client, ClientChannelView, ServerListener, Status, StatusLevel,
+    },
     WebSocketServer, WebSocketServerBlockingHandle,
 };
 use pyo3::{
+    exceptions::PyIOError,
     prelude::*,
     types::{PyBytes, PyString},
 };
@@ -284,7 +287,7 @@ impl foxglove::websocket::service::Handler for ServiceHandler {
         responder: foxglove::websocket::service::Responder,
     ) {
         let handler = self.handler.clone();
-        let request = PyRequest(request);
+        let request = PyServiceRequest(request);
         // Punt the callback to a blocking thread.
         tokio::task::spawn_blocking(move || {
             let result = Python::with_gil(|py| {
@@ -313,7 +316,7 @@ impl foxglove::websocket::service::Handler for ServiceHandler {
 /// To connect to this server: open Foxglove, choose "Open a new connection", and select Foxglove
 /// WebSocket. The default connection string matches the defaults used by the SDK.
 #[pyfunction]
-#[pyo3(signature = (*, name = None, host="127.0.0.1", port=8765, capabilities=None, server_listener=None, supported_encodings=None, services=None))]
+#[pyo3(signature = (*, name = None, host="127.0.0.1", port=8765, capabilities=None, server_listener=None, supported_encodings=None, services=None, asset_handler=None))]
 #[allow(clippy::too_many_arguments)]
 pub fn start_server(
     py: Python<'_>,
@@ -324,6 +327,7 @@ pub fn start_server(
     server_listener: Option<Py<PyAny>>,
     supported_encodings: Option<Vec<String>>,
     services: Option<Vec<PyService>>,
+    asset_handler: Option<Py<PyAny>>,
 ) -> PyResult<PyWebSocketServer> {
     let session_id = time::SystemTime::now()
         .duration_since(time::UNIX_EPOCH)
@@ -354,6 +358,12 @@ pub fn start_server(
 
     if let Some(services) = services {
         server = server.services(services.into_iter().map(PyService::into));
+    }
+
+    if let Some(asset_handler) = asset_handler {
+        server = server.fetch_asset_handler(Box::new(CallbackAssetHandler {
+            handler: Arc::new(asset_handler),
+        }));
     }
 
     let handle = py
@@ -544,11 +554,42 @@ impl From<PyCapability> for foxglove::websocket::Capability {
     }
 }
 
+/// Container for a user-defined asset handler.
+///
+/// The handler must be a callback function which takes the uri as its argument, and returns the
+/// asset `bytes`. If the handler returns `None`, a "not found" message will be sent to the client.
+/// If the handler raises an exception, the stringified exception message will be returned to the
+/// client as an error.
+struct CallbackAssetHandler {
+    handler: Arc<Py<PyAny>>,
+}
+
+impl AssetHandler for CallbackAssetHandler {
+    fn fetch(&self, uri: String, responder: foxglove::websocket::AssetResponder) {
+        let handler = self.handler.clone();
+
+        tokio::task::spawn_blocking(move || {
+            let result = Python::with_gil(|py| {
+                handler.bind(py).call((uri,), None).and_then(|data| {
+                    if data.is_none() {
+                        Err(PyIOError::new_err("not found"))
+                    } else {
+                        data.extract::<Vec<u8>>()
+                    }
+                })
+            })
+            .map(Bytes::from)
+            .map_err(|e| e.to_string());
+            responder.respond(result);
+        });
+    }
+}
+
 /// A websocket service.
 ///
-/// The handler must be a callback function which takes the :py:class:`Client` and
-/// :py:class:`Request` as arguments, and returns `bytes` as a response. If the handler raises an
-/// exception, the stringified exception message will be returned to the client as an error.
+/// The handler must be a callback function which takes the :py:class:`ServiceRequest` as its
+/// argument, and returns `bytes` as a response. If the handler raises an exception, the stringified
+/// exception message will be returned to the client as an error.
 #[pyclass(name = "Service", module = "foxglove", get_all, set_all)]
 #[derive(FromPyObject)]
 pub struct PyService {
@@ -582,11 +623,11 @@ impl From<PyService> for foxglove::websocket::service::Service {
 }
 
 /// A websocket service request.
-#[pyclass(name = "Request", module = "foxglove")]
-pub struct PyRequest(foxglove::websocket::service::Request);
+#[pyclass(name = "ServiceRequest", module = "foxglove")]
+pub struct PyServiceRequest(foxglove::websocket::service::Request);
 
 #[pymethods]
-impl PyRequest {
+impl PyServiceRequest {
     /// The service name.
     #[getter]
     fn service_name(&self) -> &str {

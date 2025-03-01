@@ -66,7 +66,8 @@ pub enum Capability {
     Time,
     /// Allow clients to call services.
     Services,
-    /// Allow clients to request assets.
+    /// Allow clients to request assets. If you supply an asset handler to the server, this
+    /// capability will be advertised automatically.
     Assets,
     /// Allow clients to subscribe and make connection graph updates
     ConnectionGraph,
@@ -164,8 +165,8 @@ const MAX_SEND_RETRIES: usize = 10;
 type WebsocketSender = SplitSink<WebSocketStream<TcpStream>, Message>;
 
 // Queue up to 1024 messages per connected client before dropping messages
+// Can be overridden by ServerOptions::message_backlog_size.
 const DEFAULT_MESSAGE_BACKLOG_SIZE: usize = 1024;
-const DEFAULT_CONTROL_PLANE_BACKLOG_SIZE: usize = 64;
 const DEFAULT_SERVICE_CALLS_PER_CLIENT: usize = 32;
 const DEFAULT_FETCH_ASSET_CALLS_PER_CLIENT: usize = 32;
 
@@ -324,6 +325,9 @@ pub(crate) struct ConnectedClient {
     /// Optional callback handler for a server implementation
     server_listener: Option<Arc<dyn ServerListener>>,
     server: Weak<Server>,
+    /// The cancellation_token is used by the server to disconnect the client.
+    /// It's cancelled when the client's control plane queue fills up (slow client).
+    cancellation_token: CancellationToken,
     /// Whether this client is subscribed to the connection graph
     /// This is updated only with the connection_graph mutex held in on_connection_graph_subscribe and unsubscribe.
     /// It's read with the connection_graph mutex held, when sending connection graph updates to clients.
@@ -413,17 +417,25 @@ impl ConnectedClient {
     /// Send the message on the control plane, disconnecting the client if the channel is full.
     fn send_control_msg(&self, message: Message) -> bool {
         if let Err(TrySendError::Full(_)) = self.control_plane_tx.try_send(message) {
-            // TODO disconnect the slow client FG-10441
-            tracing::error!(
-                "Client control plane is full for {}, dropping message",
-                self.addr
-            );
+            self.cancellation_token.cancel();
             return false;
         }
         true
     }
 
-    fn on_disconnect(&self, server: &Arc<Server>) {
+    async fn on_disconnect(&self, server: &Arc<Server>) {
+        if self.cancellation_token.is_cancelled() {
+            let mut sender = self.sender.lock().await;
+            let status = Status::new(
+                StatusLevel::Error,
+                "Disconnected because message backlog on the server is full. The backlog size is configurable in the server setup."
+                    .to_string(),
+            );
+            let message = Message::text(serde_json::to_string(&status).unwrap());
+            _ = sender.send(message).await;
+            _ = sender.send(Message::Close(None)).await;
+        }
+
         // If we track paramter subscriptions, unsubscribe this clients subscriptions
         // and notify the handler, if necessary
         if !server.capabilities.contains(&Capability::Parameters) || self.server_listener.is_none()
@@ -878,6 +890,7 @@ impl ConnectedClient {
             let asset_responder = AssetResponder::new(Client::new(self), request_id, guard);
             handler.fetch(uri, asset_responder);
         } else {
+            tracing::error!("Server advertised the Assets capability without providing a handler");
             self.send_asset_error("Server does not have a fetch asset handler", request_id);
         }
     }
@@ -1296,7 +1309,8 @@ impl Server {
         let id = ClientId(CLIENT_ID.fetch_add(1, AcqRel));
 
         let (data_tx, data_rx) = flume::bounded(self.message_backlog_size as usize);
-        let (ctrl_tx, ctrl_rx) = flume::bounded(DEFAULT_CONTROL_PLANE_BACKLOG_SIZE);
+        let (ctrl_tx, ctrl_rx) = flume::bounded(self.message_backlog_size as usize);
+        let cancellation_token = CancellationToken::new();
 
         let new_client = Arc::new_cyclic(|weak_self| ConnectedClient {
             id,
@@ -1314,6 +1328,7 @@ impl Server {
             parameter_subscriptions: parking_lot::Mutex::new(HashSet::new()),
             server_listener: self.listener.clone(),
             server: self.weak_self.clone(),
+            cancellation_token: cancellation_token.clone(),
             subscribed_to_connection_graph: AtomicBool::new(false),
         });
 
@@ -1368,19 +1383,22 @@ impl Server {
 
         // Run send and receive loops concurrently, and wait for receive to complete
         tokio::select! {
-            _ = receive_messages => {
-                tracing::debug!("Receive messages task completed");
-            }
             _ = send_control_messages => {
                 tracing::error!("Send control messages task completed");
             }
             _ = send_messages => {
                 tracing::error!("Send messages task completed");
             }
+            _ = receive_messages => {
+                tracing::debug!("Receive messages task completed");
+            }
+            _ = cancellation_token.cancelled() => {
+                tracing::warn!("Server disconnecting slow client {}", new_client.addr);
+            }
         }
 
         self.clients.retain(|c| !Arc::ptr_eq(c, &new_client));
-        new_client.on_disconnect(&self);
+        new_client.on_disconnect(&self).await;
     }
 
     async fn register_client_and_advertise(&self, client: Arc<ConnectedClient>) {

@@ -24,3 +24,8 @@ Parameter server
 Advertising Services
 --------------------
 .. literalinclude:: ../../../foxglove-sdk-examples/ws-services/main.py
+
+
+Asset server
+------------
+.. literalinclude:: ../../../foxglove-sdk-examples/ws-asset-server/main.py

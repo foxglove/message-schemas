@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use clap::Parser;
 
-use foxglove::websocket::{AssetHandler, AssetResponder, Capability};
+use foxglove::websocket::{AssetHandler, AssetResponder};
 use std::collections::HashMap;
 
 struct AssetServer {
@@ -51,7 +51,6 @@ async fn main() {
     let server = foxglove::WebSocketServer::new()
         .name("ws-demo")
         .bind(&args.host, args.port)
-        .capabilities([Capability::Assets])
         .fetch_asset_handler(Box::new(asset_server))
         .start()
         .await

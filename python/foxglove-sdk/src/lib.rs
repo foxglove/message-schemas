@@ -13,7 +13,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use websocket_server::{
     start_server, PyCapability, PyChannelView, PyClient, PyConnectionGraph, PyMessageSchema,
-    PyParameter, PyParameterType, PyParameterValue, PyRequest, PySchema, PyService,
+    PyParameter, PyParameterType, PyParameterValue, PySchema, PyService, PyServiceRequest,
     PyServiceSchema, PyStatusLevel, PyWebSocketServer,
 };
 
@@ -202,7 +202,7 @@ fn _foxglove_py(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyConnectionGraph>()?;
     // Services
     m.add_class::<PyService>()?;
-    m.add_class::<PyRequest>()?;
+    m.add_class::<PyServiceRequest>()?;
     m.add_class::<PyServiceSchema>()?;
     m.add_class::<PyMessageSchema>()?;
     m.add_class::<PySchema>()?;
