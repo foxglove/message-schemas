@@ -26,7 +26,6 @@ import {
   generateSchemaPrelude,
   generatePyclass,
   generatePySchemaStub,
-  generateTimeTypes,
   generateChannelClasses,
   generatePyChannelStub,
   generatePySchemaModule,
@@ -73,7 +72,7 @@ async function exec(command: string, args: string[], { cwd }: Pick<SpawnOptions,
 async function main({ clean }: { clean: boolean }) {
   const repoRoot = path.resolve(__dirname, "..");
   const outDir = path.join(repoRoot, "schemas");
-  const rosOutDir = path.join(repoRoot, "ros_foxglove_msgs");
+  const rosOutDir = path.join(repoRoot, "ros/foxglove_msgs");
   const typescriptTypesDir = path.join(repoRoot, "typescript/schemas/src/types");
 
   const pythonSdkRoot = path.resolve(repoRoot, "python", "foxglove-sdk");
@@ -230,8 +229,6 @@ async function main({ clean }: { clean: boolean }) {
     for (const enumSchema of enumSchemas) {
       writer.write(generatePyclass(enumSchema));
     }
-
-    writer.write(generateTimeTypes());
 
     const messageSchemas = Object.values(foxgloveMessageSchemas);
     for (const schema of messageSchemas) {

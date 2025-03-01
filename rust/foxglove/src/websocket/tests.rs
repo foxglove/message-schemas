@@ -1,5 +1,5 @@
 use assert_matches::assert_matches;
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, Bytes, BytesMut};
 use futures_util::{FutureExt, SinkExt, StreamExt};
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -14,7 +14,8 @@ use super::{create_server, send_lossy, SendLossyResult, ServerOptions, SUBPROTOC
 use crate::testutil::RecordingServerListener;
 use crate::websocket::service::{CallId, Service, ServiceId, ServiceSchema};
 use crate::websocket::{
-    Capability, ClientChannelId, Parameter, ParameterType, ParameterValue, Status, StatusLevel,
+    BlockingAssetHandlerFn, Capability, ClientChannelId, ConnectionGraph, Parameter, ParameterType,
+    ParameterValue, Status, StatusLevel,
 };
 use crate::{
     collection, Channel, ChannelBuilder, FoxgloveError, LogContext, LogSink, Metadata, Schema,
@@ -548,7 +549,7 @@ async fn test_error_status_message() {
 async fn test_service_registration_not_supported() {
     // Can't register services if we don't declare support.
     let server = create_server(ServerOptions::default());
-    let svc = Service::builder("/s", ServiceSchema::new("")).sync_handler_fn(|_| Err(""));
+    let svc = Service::builder("/s", ServiceSchema::new("")).handler_fn(|_| Err(""));
     assert_matches!(
         server.add_services(vec![svc]),
         Err(FoxgloveError::ServicesNotSupported)
@@ -562,7 +563,7 @@ async fn test_service_registration_missing_request_encoding() {
         capabilities: Some(HashSet::from([Capability::Services])),
         ..Default::default()
     });
-    let svc = Service::builder("/s", ServiceSchema::new("")).sync_handler_fn(|_| Err(""));
+    let svc = Service::builder("/s", ServiceSchema::new("")).handler_fn(|_| Err(""));
     assert_matches!(
         server.add_services(vec![svc]),
         Err(FoxgloveError::MissingRequestEncoding(_))
@@ -572,7 +573,7 @@ async fn test_service_registration_missing_request_encoding() {
 #[tokio::test]
 async fn test_service_registration_duplicate_name() {
     // Can't register a service with no encoding unless we declare global encodings.
-    let sa1 = Service::builder("/a", ServiceSchema::new("")).sync_handler_fn(|_| Err(""));
+    let sa1 = Service::builder("/a", ServiceSchema::new("")).handler_fn(|_| Err(""));
     let server = create_server(ServerOptions {
         capabilities: Some(HashSet::from([Capability::Services])),
         services: HashMap::from([(sa1.name().to_string(), sa1)]),
@@ -580,14 +581,14 @@ async fn test_service_registration_duplicate_name() {
         ..Default::default()
     });
 
-    let sa2 = Service::builder("/a", ServiceSchema::new("")).sync_handler_fn(|_| Err(""));
+    let sa2 = Service::builder("/a", ServiceSchema::new("")).handler_fn(|_| Err(""));
     assert_matches!(
         server.add_services(vec![sa2]),
         Err(FoxgloveError::DuplicateService(_))
     );
 
-    let sb1 = Service::builder("/b", ServiceSchema::new("")).sync_handler_fn(|_| Err(""));
-    let sb2 = Service::builder("/b", ServiceSchema::new("")).sync_handler_fn(|_| Err(""));
+    let sb1 = Service::builder("/b", ServiceSchema::new("")).handler_fn(|_| Err(""));
+    let sb2 = Service::builder("/b", ServiceSchema::new("")).handler_fn(|_| Err(""));
     assert_matches!(
         server.add_services(vec![sb1, sb2]),
         Err(FoxgloveError::DuplicateService(_))
@@ -1070,15 +1071,14 @@ async fn test_get_parameters() {
 async fn test_services() {
     let ok_svc = Service::builder("/ok", ServiceSchema::new("plain"))
         .with_id(ServiceId::new(1))
-        .handler_fn(|req, resp| {
+        .handler_fn(|req| -> Result<Bytes, String> {
             assert_eq!(req.service_name(), "/ok");
             assert_eq!(req.call_id(), CallId::new(99));
             let payload = req.into_payload();
             let mut response = BytesMut::with_capacity(payload.len());
             response.put(payload);
             response.reverse();
-            // Respond async, for kicks.
-            tokio::spawn(async move { resp.respond(Ok(response.freeze())) });
+            Ok(response.freeze())
         });
 
     let server = create_server(ServerOptions {
@@ -1151,7 +1151,7 @@ async fn test_services() {
     // Register a new service.
     let err_svc = Service::builder("/err", ServiceSchema::new("plain"))
         .with_id(ServiceId::new(2))
-        .sync_handler_fn(|_| Err("oh noes"));
+        .handler_fn(|_| Err("oh noes"));
     server
         .add_services(vec![err_svc])
         .expect("Failed to add service");
@@ -1263,6 +1263,204 @@ async fn test_services() {
         })
         .to_string()
     );
+}
+
+#[tokio::test]
+async fn test_fetch_asset() {
+    let server = create_server(ServerOptions {
+        capabilities: Some(HashSet::from([Capability::Assets])),
+        fetch_asset_handler: Some(Box::new(BlockingAssetHandlerFn(Arc::new(
+            |_client, uri: String| {
+                if uri.ends_with("error") {
+                    Err("test error".to_string())
+                } else {
+                    Ok(Bytes::from_static(b"test data"))
+                }
+            },
+        )))),
+        ..Default::default()
+    });
+    let addr = server
+        .start("127.0.0.1", 0)
+        .await
+        .expect("Failed to start server");
+
+    let mut ws_client = connect_client(addr).await;
+    let _ = ws_client.next().await.expect("No serverInfo sent");
+
+    let fetch_asset = json!({
+        "op": "fetchAsset",
+        "uri": "https://example.com/asset.png",
+        "requestId": 1,
+    });
+    ws_client
+        .send(Message::text(fetch_asset.to_string()))
+        .await
+        .expect("Failed to send fetch asset");
+    let fetch_asset_err = json!({
+        "op": "fetchAsset",
+        "uri": "https://example.com/error",
+        "requestId": 2,
+    });
+    ws_client
+        .send(Message::text(fetch_asset_err.to_string()))
+        .await
+        .expect("Failed to send fetch asset");
+
+    // FG-10395 replace this with something more precise
+    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+
+    let result = ws_client.next().await.unwrap();
+    let msg = result.expect("Failed to parse message");
+    let data = msg.into_data();
+    println!("data: {:?}", data);
+    assert_eq!(data[0], 0x04); // fetch asset opcode
+    assert_eq!(u32::from_le_bytes(data[1..5].try_into().unwrap()), 1);
+    assert_eq!(data[5], 0); // 0 for success
+    assert_eq!(u32::from_le_bytes(data[6..10].try_into().unwrap()), 0);
+    assert_eq!(&data[10..], b"test data");
+
+    let result = ws_client.next().await.unwrap();
+    let msg = result.expect("Failed to parse message");
+    let data = msg.into_data();
+    assert_eq!(data[0], 0x04); // fetch asset opcode
+    assert_eq!(u32::from_le_bytes(data[1..5].try_into().unwrap()), 2);
+    assert_eq!(data[5], 1); // 1 for error
+    assert_eq!(
+        u32::from_le_bytes(data[6..10].try_into().unwrap()),
+        b"test error".len() as u32
+    );
+    assert_eq!(&data[10..], b"test error");
+}
+
+#[traced_test]
+#[tokio::test]
+async fn test_update_connection_graph() {
+    let recording_listener = Arc::new(RecordingServerListener::new());
+
+    let server = create_server(ServerOptions {
+        capabilities: Some(HashSet::from([Capability::ConnectionGraph])),
+        listener: Some(recording_listener.clone()),
+        ..Default::default()
+    });
+    let addr = server
+        .start("127.0.0.1", 0)
+        .await
+        .expect("Failed to start server");
+
+    let mut initial_graph = ConnectionGraph::new();
+    initial_graph.set_published_topic("topic1", ["publisher1".to_string()]);
+    initial_graph.set_subscribed_topic("topic1", ["subscriber1".to_string()]);
+    initial_graph.set_advertised_service("service1", ["provider1".to_string()]);
+    server
+        .replace_connection_graph(initial_graph)
+        .expect("failed to update connection graph");
+
+    let mut ws_client = connect_client(addr).await;
+
+    ws_client
+        .send(Message::text(r#"{"op": "subscribeConnectionGraph"}"#))
+        .await
+        .expect("Failed to send get parameters");
+
+    _ = ws_client.next().await.expect("No serverInfo sent");
+
+    // FG-10395 replace this with something more precise
+    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+
+    let msg = ws_client.next().await.expect("No message received");
+    let msg = msg.expect("Failed to parse message");
+    let text = msg.into_text().expect("Failed to get message text");
+    let msg: Value = serde_json::from_str(&text).expect("Failed to parse message");
+    assert_eq!(msg["op"], "connectionGraphUpdate");
+    assert_eq!(msg["publishedTopics"][0]["name"], "topic1");
+    assert_eq!(msg["publishedTopics"][0]["publisherIds"][0], "publisher1");
+    assert_eq!(msg["subscribedTopics"][0]["name"], "topic1");
+    assert_eq!(
+        msg["subscribedTopics"][0]["subscriberIds"][0],
+        "subscriber1"
+    );
+    assert_eq!(msg["advertisedServices"][0]["name"], "service1");
+    assert_eq!(msg["advertisedServices"][0]["providerIds"][0], "provider1");
+    assert_eq!(msg["removedTopics"], json!([]));
+    assert_eq!(msg["removedServices"], json!([]));
+
+    // FG-10395 replace this with something more precise
+    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+
+    let mut graph = ConnectionGraph::new();
+    // Update publisher for topic1
+    graph.set_published_topic("topic1", ["publisher2".to_string()]);
+    // Add topic2, remove topic1
+    graph.set_subscribed_topic("topic2", ["subscriber2".to_string()]);
+    // Delete service1
+    server
+        .replace_connection_graph(graph)
+        .expect("failed to update connection graph");
+
+    let msg = ws_client.next().await.expect("No message received");
+    let msg = msg.expect("Failed to parse message");
+    let text = msg.into_text().expect("Failed to get message text");
+    let msg: Value = serde_json::from_str(&text).expect("Failed to parse message");
+    assert_eq!(msg["op"], "connectionGraphUpdate");
+    assert_eq!(msg["publishedTopics"][0]["name"], "topic1");
+    assert_eq!(msg["publishedTopics"][0]["publisherIds"][0], "publisher2");
+    assert_eq!(msg["subscribedTopics"][0]["name"], "topic2");
+    assert_eq!(
+        msg["subscribedTopics"][0]["subscriberIds"][0],
+        "subscriber2"
+    );
+    assert_eq!(msg["advertisedServices"], json!([]));
+    assert_eq!(msg["removedTopics"], json!([]));
+    assert_eq!(msg["removedServices"], json!(["service1"]));
+
+    server.stop().await;
+}
+
+#[traced_test]
+#[tokio::test]
+async fn test_slow_client() {
+    let server = create_server(ServerOptions {
+        message_backlog_size: Some(1),
+        ..Default::default()
+    });
+    let addr = server
+        .start("127.0.0.1", 0)
+        .await
+        .expect("Failed to start server");
+
+    let mut ws_client = connect_client(addr).await;
+
+    // Publish more status messages than the client can handle
+    for i in 0..10 {
+        let status = Status::new(StatusLevel::Error, format!("msg{}", i));
+        server.publish_status(status);
+    }
+
+    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+
+    _ = ws_client.next().await.expect("No serverInfo sent");
+
+    // Client should have been disconencted
+    let msg = ws_client.next().await.expect("No message received");
+    let msg = msg.expect("Failed to parse message");
+    let text = msg.into_text().expect("Failed to get message text");
+    let msg: Value = serde_json::from_str(&text).expect("Failed to parse message");
+    assert_eq!(msg["op"], "status");
+    assert_eq!(msg["level"], 2);
+    assert_eq!(
+        msg["message"],
+        "Disconnected because message backlog on the server is full. The backlog size is configurable in the server setup."
+    );
+
+    // Close message should be received
+    let msg = ws_client.next().await.expect("No message received");
+    let msg = msg.expect("Failed to parse message");
+    assert!(msg.is_close());
+
+    // Client should be closed
+    assert!(ws_client.next().await.is_none());
+    server.stop().await;
 }
 
 /// Connect to a server, ensuring the protocol header is set, and return the client WS stream

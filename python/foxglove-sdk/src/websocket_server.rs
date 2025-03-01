@@ -1,10 +1,13 @@
 use crate::errors::PyFoxgloveError;
 use bytes::Bytes;
 use foxglove::{
-    websocket::{ChannelView, Client, ClientChannelView, ServerListener, Status, StatusLevel},
+    websocket::{
+        AssetHandler, ChannelView, Client, ClientChannelView, ServerListener, Status, StatusLevel,
+    },
     WebSocketServer, WebSocketServerBlockingHandle,
 };
 use pyo3::{
+    exceptions::PyIOError,
     prelude::*,
     types::{PyBytes, PyString},
 };
@@ -36,7 +39,7 @@ impl PyClient {
     }
 }
 
-impl From<Client<'_>> for PyClient {
+impl From<Client> for PyClient {
     fn from(value: Client) -> Self {
         Self {
             id: value.id().into(),
@@ -209,6 +212,34 @@ impl ServerListener for PyServerListener {
             tracing::error!("Callback failed: {}", err.to_string());
         }
     }
+
+    fn on_connection_graph_subscribe(&self) {
+        let result: PyResult<()> = Python::with_gil(|py| {
+            self.listener
+                .bind(py)
+                .call_method("on_connection_graph_subscribe", (), None)?;
+
+            Ok(())
+        });
+
+        if let Err(err) = result {
+            tracing::error!("Callback failed: {}", err.to_string());
+        }
+    }
+
+    fn on_connection_graph_unsubscribe(&self) {
+        let result: PyResult<()> = Python::with_gil(|py| {
+            self.listener
+                .bind(py)
+                .call_method("on_connection_graph_unsubscribe", (), None)?;
+
+            Ok(())
+        });
+
+        if let Err(err) = result {
+            tracing::error!("Callback failed: {}", err.to_string());
+        }
+    }
 }
 
 impl PyServerListener {
@@ -256,7 +287,7 @@ impl foxglove::websocket::service::Handler for ServiceHandler {
         responder: foxglove::websocket::service::Responder,
     ) {
         let handler = self.handler.clone();
-        let request = PyRequest(request);
+        let request = PyServiceRequest(request);
         // Punt the callback to a blocking thread.
         tokio::task::spawn_blocking(move || {
             let result = Python::with_gil(|py| {
@@ -285,7 +316,7 @@ impl foxglove::websocket::service::Handler for ServiceHandler {
 /// To connect to this server: open Foxglove, choose "Open a new connection", and select Foxglove
 /// WebSocket. The default connection string matches the defaults used by the SDK.
 #[pyfunction]
-#[pyo3(signature = (*, name = None, host="127.0.0.1", port=8765, capabilities=None, server_listener=None, supported_encodings=None, services=None))]
+#[pyo3(signature = (*, name = None, host="127.0.0.1", port=8765, capabilities=None, server_listener=None, supported_encodings=None, services=None, asset_handler=None))]
 #[allow(clippy::too_many_arguments)]
 pub fn start_server(
     py: Python<'_>,
@@ -296,6 +327,7 @@ pub fn start_server(
     server_listener: Option<Py<PyAny>>,
     supported_encodings: Option<Vec<String>>,
     services: Option<Vec<PyService>>,
+    asset_handler: Option<Py<PyAny>>,
 ) -> PyResult<PyWebSocketServer> {
     let session_id = time::SystemTime::now()
         .duration_since(time::UNIX_EPOCH)
@@ -328,6 +360,12 @@ pub fn start_server(
         server = server.services(services.into_iter().map(PyService::into));
     }
 
+    if let Some(asset_handler) = asset_handler {
+        server = server.fetch_asset_handler(Box::new(CallbackAssetHandler {
+            handler: Arc::new(asset_handler),
+        }));
+    }
+
     let handle = py
         .allow_threads(|| server.start_blocking())
         .map_err(PyFoxgloveError::from)?;
@@ -350,6 +388,9 @@ impl PyWebSocketServer {
     /// Sets a new session ID and notifies all clients, causing them to reset their state.
     /// If no session ID is provided, generates a new one based on the current timestamp.
     /// If the server has been stopped, this has no effect.
+    ///
+    /// :param session_id: An optional session ID.
+    /// :type session_id: Optional[str]
     #[pyo3(signature = (session_id=None))]
     pub fn clear_session(&self, session_id: Option<String>) {
         if let Some(server) = &self.0 {
@@ -359,6 +400,10 @@ impl PyWebSocketServer {
 
     /// Publishes the current server timestamp to all clients.
     /// If the server has been stopped, this has no effect.
+    ///
+    /// :param timestamp_nanos: The timestamp to broadcast, in nanoseconds.
+    /// :type timestamp_nanos: int
+    #[pyo3(signature = (timestamp_nanos))]
     pub fn broadcast_time(&self, timestamp_nanos: u64) {
         if let Some(server) = &self.0 {
             server.broadcast_time(timestamp_nanos);
@@ -367,6 +412,13 @@ impl PyWebSocketServer {
 
     /// Send a status message to all clients.
     /// If the server has been stopped, this has no effect.
+    ///
+    /// :param message: The message to send.
+    /// :type message: str
+    /// :param level: The level of the status message.
+    /// :type level: :py:enum:`StatusLevel`
+    /// :param id: An optional id for the status message.
+    /// :type id: Optional[str]
     #[pyo3(signature = (message, level, id=None))]
     pub fn publish_status(&self, message: String, level: &PyStatusLevel, id: Option<String>) {
         let Some(server) = &self.0 else {
@@ -381,6 +433,9 @@ impl PyWebSocketServer {
 
     /// Remove status messages by id from all clients.
     /// If the server has been stopped, this has no effect.
+    ///
+    /// :param status_ids: The ids of the status messages to remove.
+    /// :type status_ids: list[str]
     pub fn remove_status(&self, status_ids: Vec<String>) {
         if let Some(server) = &self.0 {
             server.remove_status(status_ids);
@@ -388,6 +443,9 @@ impl PyWebSocketServer {
     }
 
     /// Publishes parameter values to all subscribed clients.
+    ///
+    /// :param parameters: The parameters to publish.
+    /// :type parameters: list[:py:class:`Parameter`]
     pub fn publish_parameter_values(&self, parameters: Vec<PyParameter>) {
         if let Some(server) = &self.0 {
             server.publish_parameter_values(parameters.into_iter().map(Into::into).collect());
@@ -423,9 +481,20 @@ impl PyWebSocketServer {
             py.allow_threads(move || server.remove_services(names));
         }
     }
+
+    pub fn publish_connection_graph(&self, graph: Bound<'_, PyConnectionGraph>) -> PyResult<()> {
+        let Some(server) = &self.0 else {
+            return Ok(());
+        };
+        let graph = graph.extract::<PyConnectionGraph>()?;
+        server
+            .publish_connection_graph(graph.into())
+            .map_err(PyFoxgloveError::from)
+            .map_err(PyErr::from)
+    }
 }
 
-/// The level of a :py:class:`Status` message
+/// A level for :py:meth:`WebSocketServer.publish_status`.
 #[pyclass(name = "StatusLevel", module = "foxglove", eq, eq_int)]
 #[derive(Clone, PartialEq)]
 pub enum PyStatusLevel {
@@ -444,12 +513,17 @@ impl From<PyStatusLevel> for StatusLevel {
     }
 }
 
-/// A capability that the websocket server advertises to its clients.
+/// An enumeration of capabilities that you may choose to support for live visualization.
+///
+/// Specify the capabilities you support when calling :py:func:`start_server`. These will be
+/// advertised to the Foxglove app when connected as a WebSocket client.
 #[pyclass(name = "Capability", module = "foxglove", eq, eq_int)]
 #[derive(Clone, PartialEq)]
 pub enum PyCapability {
     /// Allow clients to advertise channels to send data messages to the server.
     ClientPublish,
+    /// Allow clients to subscribe and make connection graph updates
+    ConnectionGraph,
     /// Allow clients to get & set parameters.
     Parameters,
     /// Inform clients about the latest server time.
@@ -466,6 +540,7 @@ impl From<PyCapability> for foxglove::websocket::Capability {
     fn from(value: PyCapability) -> Self {
         match value {
             PyCapability::ClientPublish => foxglove::websocket::Capability::ClientPublish,
+            PyCapability::ConnectionGraph => foxglove::websocket::Capability::ConnectionGraph,
             PyCapability::Parameters => foxglove::websocket::Capability::Parameters,
             PyCapability::Time => foxglove::websocket::Capability::Time,
             PyCapability::Services => foxglove::websocket::Capability::Services,
@@ -473,11 +548,42 @@ impl From<PyCapability> for foxglove::websocket::Capability {
     }
 }
 
+/// Container for a user-defined asset handler.
+///
+/// The handler must be a callback function which takes the uri as its argument, and returns the
+/// asset `bytes`. If the handler returns `None`, a "not found" message will be sent to the client.
+/// If the handler raises an exception, the stringified exception message will be returned to the
+/// client as an error.
+struct CallbackAssetHandler {
+    handler: Arc<Py<PyAny>>,
+}
+
+impl AssetHandler for CallbackAssetHandler {
+    fn fetch(&self, uri: String, responder: foxglove::websocket::AssetResponder) {
+        let handler = self.handler.clone();
+
+        tokio::task::spawn_blocking(move || {
+            let result = Python::with_gil(|py| {
+                handler.bind(py).call((uri,), None).and_then(|data| {
+                    if data.is_none() {
+                        Err(PyIOError::new_err("not found"))
+                    } else {
+                        data.extract::<Vec<u8>>()
+                    }
+                })
+            })
+            .map(Bytes::from)
+            .map_err(|e| e.to_string());
+            responder.respond(result);
+        });
+    }
+}
+
 /// A websocket service.
 ///
-/// The handler must be a callback function which takes the :py:class:`Client` and
-/// :py:class:`Request` as arguments, and returns `bytes` as a response. If the handler raises an
-/// exception, the stringified exception message will be returned to the client as an error.
+/// The handler must be a callback function which takes the :py:class:`ServiceRequest` as its
+/// argument, and returns `bytes` as a response. If the handler raises an exception, the stringified
+/// exception message will be returned to the client as an error.
 #[pyclass(name = "Service", module = "foxglove", get_all, set_all)]
 #[derive(FromPyObject)]
 pub struct PyService {
@@ -511,11 +617,11 @@ impl From<PyService> for foxglove::websocket::service::Service {
 }
 
 /// A websocket service request.
-#[pyclass(name = "Request", module = "foxglove")]
-pub struct PyRequest(foxglove::websocket::service::Request);
+#[pyclass(name = "ServiceRequest", module = "foxglove")]
+pub struct PyServiceRequest(foxglove::websocket::service::Request);
 
 #[pymethods]
-impl PyRequest {
+impl PyServiceRequest {
     /// The service name.
     #[getter]
     fn service_name(&self) -> &str {
@@ -646,10 +752,10 @@ pub struct PySchema {
 impl PySchema {
     #[new]
     #[pyo3(signature = (*, name, encoding, data))]
-    fn new(name: &str, encoding: &str, data: Vec<u8>) -> Self {
-        PySchema {
-            name: name.to_string(),
-            encoding: encoding.to_string(),
+    fn new(name: String, encoding: String, data: Vec<u8>) -> Self {
+        Self {
+            name,
+            encoding,
             data,
         }
     }
@@ -661,10 +767,11 @@ impl From<PySchema> for foxglove::Schema {
     }
 }
 
+/// A parameter type.
 #[pyclass(name = "ParameterType", module = "foxglove", eq, eq_int)]
 #[derive(Clone, PartialEq)]
 pub enum PyParameterType {
-    /// A byte array, encoded as a base64-encoded string.
+    /// A byte array.
     ByteArray,
     /// A decimal or integer value that can be represented as a `float64`.
     Float64,
@@ -791,5 +898,58 @@ impl From<foxglove::websocket::Parameter> for PyParameter {
             r#type: value.r#type.map(Into::into),
             value: value.value.map(Into::into),
         }
+    }
+}
+
+#[pyclass(name = "ConnectionGraph", module = "foxglove")]
+#[derive(Clone)]
+pub struct PyConnectionGraph(foxglove::websocket::ConnectionGraph);
+
+#[pymethods]
+impl PyConnectionGraph {
+    /// Create a new connection graph.
+    #[new]
+    fn default() -> Self {
+        Self(foxglove::websocket::ConnectionGraph::new())
+    }
+
+    /// Set a published topic and its associated publisher ids.
+    /// Overwrites any existing topic with the same name.
+    /// :param topic: The topic name.
+    /// :type topic: str
+    /// :param publisher_ids: The set of publisher ids.
+    /// :type publisher_ids: list[str]
+    pub fn set_published_topic(&mut self, topic: &str, publisher_ids: Vec<String>) {
+        self.0.set_published_topic(topic, publisher_ids);
+    }
+
+    /// Set a subscribed topic and its associated subscriber ids.
+    /// Overwrites any existing topic with the same name.
+    /// :param topic: The topic name.
+    /// :type topic: str
+    /// :param subscriber_ids: The set of subscriber ids.
+    /// :type subscriber_ids: list[str]
+    pub fn set_subscribed_topic(&mut self, topic: &str, subscriber_ids: Vec<String>) {
+        self.0.set_subscribed_topic(topic, subscriber_ids);
+    }
+
+    /// Set an advertised service and its associated provider ids.
+    /// Overwrites any existing service with the same name.
+    /// :param service: The service name.
+    /// :type service: str
+    /// :param provider_ids: The set of provider ids.
+    /// :type provider_ids: list[str]
+    pub fn set_advertised_service(&mut self, service: &str, provider_ids: Vec<String>) {
+        self.0.set_advertised_service(service, provider_ids);
+    }
+
+    pub fn __repr__(&self) -> String {
+        format!("{:?}", self.0)
+    }
+}
+
+impl From<PyConnectionGraph> for foxglove::websocket::ConnectionGraph {
+    fn from(value: PyConnectionGraph) -> Self {
+        value.0
     }
 }

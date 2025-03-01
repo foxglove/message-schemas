@@ -2,6 +2,9 @@
 from enum import Enum
 from typing import List, Optional
 
+from .schemas_wkt import Duration as Duration
+from .schemas_wkt import Timestamp as Timestamp
+
 #
 # Enums
 #
@@ -195,17 +198,6 @@ class CylinderPrimitive:
         top_scale: "Optional[float]" = 0.0,
         color: "Optional[Color]" = None,
     ) -> "CylinderPrimitive": ...
-
-class Duration:
-    """
-    A duration in seconds and nanoseconds
-    """
-
-    def __new__(
-        cls,
-        sec: int,
-        nsec: Optional[int] = None,
-    ) -> "Duration": ...
 
 class FrameTransform:
     """
@@ -594,17 +586,6 @@ class TextPrimitive:
         color: "Optional[Color]" = None,
         text: "Optional[str]" = "",
     ) -> "TextPrimitive": ...
-
-class Timestamp:
-    """
-    A timestamp in seconds and nanoseconds
-    """
-
-    def __new__(
-        cls,
-        sec: int,
-        nsec: Optional[int] = None,
-    ) -> "Timestamp": ...
 
 class TriangleListPrimitive:
     """

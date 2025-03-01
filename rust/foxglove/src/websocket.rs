@@ -10,7 +10,7 @@ pub use crate::websocket::protocol::server::{
 };
 use crate::{get_runtime_handle, Channel, FoxgloveError, LogSink, Metadata};
 use bimap::BiHashMap;
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, Bytes, BytesMut};
 use flume::TrySendError;
 use futures_util::{stream::SplitSink, SinkExt, StreamExt};
 use serde::Serialize;
@@ -33,8 +33,15 @@ use tokio_tungstenite::{
 };
 use tokio_util::sync::CancellationToken;
 
+mod fetch_asset;
+pub use fetch_asset::{AssetHandler, AssetResponder};
+pub(crate) use fetch_asset::{AsyncAssetHandlerFn, BlockingAssetHandlerFn};
+mod connection_graph;
 mod protocol;
+mod semaphore;
 pub mod service;
+pub use connection_graph::ConnectionGraph;
+pub(crate) use semaphore::{Semaphore, SemaphoreGuard};
 #[cfg(test)]
 mod tests;
 #[cfg(all(test, feature = "unstable"))]
@@ -59,6 +66,11 @@ pub enum Capability {
     Time,
     /// Allow clients to call services.
     Services,
+    /// Allow clients to request assets. If you supply an asset handler to the server, this
+    /// capability will be advertised automatically.
+    Assets,
+    /// Allow clients to subscribe and make connection graph updates
+    ConnectionGraph,
 }
 
 /// Identifies a client connection. Unique for the duration of the server's lifetime.
@@ -72,13 +84,40 @@ impl From<ClientId> for u32 {
 }
 
 /// A connected client session with the websocket server.
-#[derive(Debug)]
-pub struct Client<'a>(&'a ConnectedClient);
+#[derive(Debug, Clone)]
+pub struct Client {
+    id: ClientId,
+    client: Weak<ConnectedClient>,
+}
 
-impl Client<'_> {
+impl Client {
+    pub(crate) fn new(client: &ConnectedClient) -> Self {
+        Self {
+            id: client.id,
+            client: client.weak_self.clone(),
+        }
+    }
+
     /// Returns the client ID.
     pub fn id(&self) -> ClientId {
-        self.0.id
+        self.id
+    }
+
+    /// Send a status message to this client. Does nothing if client is disconnected.
+    pub fn send_status(&self, status: Status) {
+        if let Some(client) = self.client.upgrade() {
+            client.send_status(status);
+        }
+    }
+
+    /// Send a fetch asset response to the client. Does nothing if client is disconnected.
+    pub(crate) fn send_asset_response(&self, result: Result<Bytes, String>, request_id: u32) {
+        if let Some(client) = self.client.upgrade() {
+            match result {
+                Ok(asset) => client.send_asset_response(&asset, request_id),
+                Err(err) => client.send_asset_error(&err.to_string(), request_id),
+            }
+        }
     }
 }
 
@@ -126,9 +165,10 @@ const MAX_SEND_RETRIES: usize = 10;
 type WebsocketSender = SplitSink<WebSocketStream<TcpStream>, Message>;
 
 // Queue up to 1024 messages per connected client before dropping messages
+// Can be overridden by ServerOptions::message_backlog_size.
 const DEFAULT_MESSAGE_BACKLOG_SIZE: usize = 1024;
-const DEFAULT_CONTROL_PLANE_BACKLOG_SIZE: usize = 64;
 const DEFAULT_SERVICE_CALLS_PER_CLIENT: usize = 32;
+const DEFAULT_FETCH_ASSET_CALLS_PER_CLIENT: usize = 32;
 
 #[derive(Error, Debug)]
 enum WSError {
@@ -146,6 +186,7 @@ pub(crate) struct ServerOptions {
     pub services: HashMap<String, Service>,
     pub supported_encodings: Option<HashSet<String>>,
     pub runtime: Option<Handle>,
+    pub fetch_asset_handler: Option<Box<dyn AssetHandler>>,
 }
 
 impl std::fmt::Debug for ServerOptions {
@@ -155,6 +196,8 @@ impl std::fmt::Debug for ServerOptions {
             .field("name", &self.name)
             .field("message_backlog_size", &self.message_backlog_size)
             .field("services", &self.services)
+            .field("capabilities", &self.capabilities)
+            .field("supported_encodings", &self.supported_encodings)
             .finish()
     }
 }
@@ -183,10 +226,18 @@ pub(crate) struct Server {
     subscribed_parameters: parking_lot::Mutex<HashSet<String>>,
     /// Encodings server can accept from clients. Ignored unless the "clientPublish" capability is set.
     supported_encodings: HashSet<String>,
+    /// The current connection graph, unused unless the "connectionGraph" capability is set.
+    /// see https://github.com/foxglove/ws-protocol/blob/main/docs/spec.md#connection-graph-update
+    connection_graph: parking_lot::Mutex<ConnectionGraph>,
+    /// The number of clients subscribed to the connection graph
+    /// This is a mutex, not an atomic, as it's used to synchronize calls to on_connection_graph_subscribe/unsubscribe
+    connection_graph_subscriber_count: parking_lot::Mutex<u32>,
     /// Token for cancelling all tasks
     cancellation_token: CancellationToken,
     /// Registered services.
     services: parking_lot::RwLock<ServiceMap>,
+    /// Handler for fetch asset requests
+    fetch_asset_handler: Option<Box<dyn AssetHandler>>,
 }
 
 /// Provides a mechanism for registering callbacks for handling client message events.
@@ -244,6 +295,10 @@ pub trait ServerListener: Send + Sync {
     /// Callback invoked when the last client unsubscribes from the named parameters.
     /// Requires [`Capability::Parameters`].
     fn on_parameters_unsubscribe(&self, _param_names: Vec<String>) {}
+    /// Callback invoked when the first client subscribes to the connection graph. Requires [`Capability::ConnectionGraph`].
+    fn on_connection_graph_subscribe(&self) {}
+    /// Callback invoked when the last client unsubscribes from the connection graph. Requires [`Capability::ConnectionGraph`].
+    fn on_connection_graph_unsubscribe(&self) {}
 }
 
 /// A connected client session with the websocket server.
@@ -257,7 +312,8 @@ pub(crate) struct ConnectedClient {
     data_plane_rx: flume::Receiver<Message>,
     control_plane_tx: flume::Sender<Message>,
     control_plane_rx: flume::Receiver<Message>,
-    service_call_sem: service::Semaphore,
+    service_call_sem: Semaphore,
+    fetch_asset_sem: Semaphore,
     /// Subscriptions from this client
     subscriptions: parking_lot::Mutex<BiHashMap<ChannelId, SubscriptionId>>,
     /// Channels advertised by this client
@@ -267,6 +323,13 @@ pub(crate) struct ConnectedClient {
     /// Optional callback handler for a server implementation
     server_listener: Option<Arc<dyn ServerListener>>,
     server: Weak<Server>,
+    /// The cancellation_token is used by the server to disconnect the client.
+    /// It's cancelled when the client's control plane queue fills up (slow client).
+    cancellation_token: CancellationToken,
+    /// Whether this client is subscribed to the connection graph
+    /// This is updated only with the connection_graph mutex held in on_connection_graph_subscribe and unsubscribe.
+    /// It's read with the connection_graph mutex held, when sending connection graph updates to clients.
+    subscribed_to_connection_graph: AtomicBool,
 }
 
 impl ConnectedClient {
@@ -274,6 +337,10 @@ impl ConnectedClient {
         self.weak_self
             .upgrade()
             .expect("client cannot be dropped while in use")
+    }
+
+    fn is_subscribed_to_connection_graph(&self) -> bool {
+        self.subscribed_to_connection_graph.load(Relaxed)
     }
 
     /// Handle a text or binary message sent from the client.
@@ -326,9 +393,10 @@ impl ConnectedClient {
                 self.on_parameters_unsubscribe(server, msg.parameter_names)
             }
             ClientMessage::ServiceCallRequest(msg) => self.on_service_call(msg),
-            _ => {
-                tracing::error!("Unsupported message from {}: {}", self.addr, msg.op());
-                self.send_error(format!("Unsupported message: {}", msg.op()));
+            ClientMessage::FetchAsset(msg) => self.on_fetch_asset(server, msg.uri, msg.request_id),
+            ClientMessage::SubscribeConnectionGraph => self.on_connection_graph_subscribe(server),
+            ClientMessage::UnsubscribeConnectionGraph => {
+                self.on_connection_graph_unsubscribe(server)
             }
         }
     }
@@ -347,17 +415,25 @@ impl ConnectedClient {
     /// Send the message on the control plane, disconnecting the client if the channel is full.
     fn send_control_msg(&self, message: Message) -> bool {
         if let Err(TrySendError::Full(_)) = self.control_plane_tx.try_send(message) {
-            // TODO disconnect the slow client FG-10441
-            tracing::error!(
-                "Client control plane is full for {}, dropping message",
-                self.addr
-            );
+            self.cancellation_token.cancel();
             return false;
         }
         true
     }
 
-    fn on_disconnect(&self, server: &Arc<Server>) {
+    async fn on_disconnect(&self, server: &Arc<Server>) {
+        if self.cancellation_token.is_cancelled() {
+            let mut sender = self.sender.lock().await;
+            let status = Status::new(
+                StatusLevel::Error,
+                "Disconnected because message backlog on the server is full. The backlog size is configurable in the server setup."
+                    .to_string(),
+            );
+            let message = Message::text(serde_json::to_string(&status).unwrap());
+            _ = sender.send(message).await;
+            _ = sender.send(Message::Close(None)).await;
+        }
+
         // If we track paramter subscriptions, unsubscribe this clients subscriptions
         // and notify the handler, if necessary
         if !server.capabilities.contains(&Capability::Parameters) || self.server_listener.is_none()
@@ -401,7 +477,7 @@ impl ConnectedClient {
         // Call the handler after releasing the advertised_channels lock
         if let Some(handler) = self.server_listener.as_ref() {
             handler.on_message_data(
-                Client(self),
+                Client::new(self),
                 ClientChannelView {
                     id: client_channel.id,
                     topic: &client_channel.topic,
@@ -434,9 +510,9 @@ impl ConnectedClient {
         }
         // Call the handler after releasing the advertised_channels lock
         if let Some(handler) = self.server_listener.as_ref() {
-            for (id, client_channel) in channel_ids.iter().cloned().zip(client_channels) {
+            for (id, client_channel) in channel_ids.iter().copied().zip(client_channels) {
                 handler.on_client_unadvertise(
-                    Client(self),
+                    Client::new(self),
                     ClientChannelView {
                         id,
                         topic: &client_channel.topic,
@@ -474,7 +550,7 @@ impl ConnectedClient {
             // Call the handler after releasing the advertised_channels lock
             if let Some(handler) = self.server_listener.as_ref() {
                 handler.on_client_advertise(
-                    Client(self),
+                    Client::new(self),
                     ClientChannelView {
                         id: client_channel.id,
                         topic: &client_channel.topic,
@@ -515,7 +591,7 @@ impl ConnectedClient {
         // Finally call the handler for each channel
         for channel in unsubscribed_channels {
             handler.on_unsubscribe(
-                Client(self),
+                Client::new(self),
                 ChannelView {
                     id: channel.id,
                     topic: &channel.topic,
@@ -581,7 +657,7 @@ impl ConnectedClient {
             );
             if let Some(handler) = self.server_listener.as_ref() {
                 handler.on_subscribe(
-                    Client(self),
+                    Client::new(self),
                     ChannelView {
                         id: channel.id,
                         topic: &channel.topic,
@@ -604,7 +680,7 @@ impl ConnectedClient {
 
         if let Some(handler) = self.server_listener.as_ref() {
             let request_id = request_id.as_deref();
-            let parameters = handler.on_get_parameters(Client(self), param_names, request_id);
+            let parameters = handler.on_get_parameters(Client::new(self), param_names, request_id);
             let message = protocol::server::parameters_json(&parameters, request_id);
             let _ = self.control_plane_tx.try_send(Message::text(message));
         }
@@ -624,7 +700,7 @@ impl ConnectedClient {
         let updated_parameters = if let Some(handler) = self.server_listener.as_ref() {
             let request_id = request_id.as_deref();
             let updated_parameters =
-                handler.on_set_parameters(Client(self), parameters, request_id);
+                handler.on_set_parameters(Client::new(self), parameters, request_id);
             // Send all the updated_parameters back to the client if request_id is provided.
             // This is the behavior of the reference Python server implementation.
             if request_id.is_some() {
@@ -681,7 +757,7 @@ impl ConnectedClient {
 
         // Get the list of which subscriptions are new to the server (first time subscriptions)
         if self.server_listener.is_some() {
-            for name in param_names.iter() {
+            for name in &param_names {
                 if all_subscriptions.insert(name.clone()) {
                     new_param_subscriptions.push(name.clone());
                 }
@@ -797,14 +873,106 @@ impl ConnectedClient {
         self.send_control_msg(msg);
     }
 
+    fn on_fetch_asset(&self, server: Arc<Server>, uri: String, request_id: u32) {
+        if !server.capabilities.contains(&Capability::Assets) {
+            self.send_error("Server does not support assets capability".to_string());
+            return;
+        }
+
+        let Some(guard) = self.fetch_asset_sem.try_acquire() else {
+            self.send_asset_error("Too many concurrent fetch asset requests", request_id);
+            return;
+        };
+
+        if let Some(handler) = server.fetch_asset_handler.as_ref() {
+            let asset_responder = AssetResponder::new(Client::new(self), request_id, guard);
+            handler.fetch(uri, asset_responder);
+        } else {
+            tracing::error!("Server advertised the Assets capability without providing a handler");
+            self.send_asset_error("Server does not have a fetch asset handler", request_id);
+        }
+    }
+
+    fn on_connection_graph_subscribe(&self, server: Arc<Server>) {
+        if !server.capabilities.contains(&Capability::ConnectionGraph) {
+            self.send_error("Server does not support connection graph capability".to_string());
+            return;
+        }
+
+        let is_subscribed = self.subscribed_to_connection_graph.load(Relaxed);
+        if is_subscribed {
+            tracing::debug!(
+                "Client {} is already subscribed to connection graph updates",
+                self.addr
+            );
+            return;
+        }
+
+        {
+            let mut subscriber_count = server.connection_graph_subscriber_count.lock();
+            let is_first_subscriber = *subscriber_count == 0;
+            *subscriber_count += 1;
+
+            // We hold the lock over the call to the listener so that subscribe and unsubscribe
+            // calls are correctly ordered relative to each other.
+            if is_first_subscriber {
+                if let Some(listener) = server.listener.as_ref() {
+                    listener.on_connection_graph_subscribe();
+                }
+            }
+        }
+
+        // We hold the connection_graph lock over updating self.subscribed_to_connection_graph
+        // and sending the initial update message, so it's synchronized with unsubscribe and
+        // with server.connection_graph_update.
+        let mut connection_graph = server.connection_graph.lock();
+        // Take the graph and replace it with an empty default
+        let current_graph = std::mem::take(&mut *connection_graph);
+        // Update the empty default with the current graph, setting it back to where it was,
+        // and generating the full diff in the process.
+        let json_diff = connection_graph.update(current_graph);
+        // Send the full diff to the client as the starting state
+        self.send_control_msg(Message::text(json_diff));
+        self.subscribed_to_connection_graph.store(true, Relaxed);
+    }
+
+    fn on_connection_graph_unsubscribe(&self, server: Arc<Server>) {
+        if !server.capabilities.contains(&Capability::ConnectionGraph) {
+            self.send_error("Server does not support connection graph capability".to_string());
+            return;
+        }
+
+        let is_subscribed = self.is_subscribed_to_connection_graph();
+        if !is_subscribed {
+            self.send_error("Client is not subscribed to connection graph updates".to_string());
+            return;
+        }
+
+        {
+            let mut subscriber_count = server.connection_graph_subscriber_count.lock();
+            *subscriber_count -= 1;
+
+            if *subscriber_count == 0 {
+                if let Some(listener) = server.listener.as_ref() {
+                    listener.on_connection_graph_unsubscribe();
+                }
+            }
+        }
+
+        // Acquire the lock to sychronize with subscribe and with server.connection_graph_update.
+        let _guard = server.connection_graph.lock();
+        self.subscribed_to_connection_graph.store(false, Relaxed);
+    }
+
     /// Send an ad hoc error status message to the client, with the given message.
     fn send_error(&self, message: String) {
+        tracing::debug!("Sending error to client {}: {}", self.addr, message);
         self.send_status(Status::new(StatusLevel::Error, message));
     }
 
     /// Send an ad hoc warning status message to the client, with the given message.
-    #[allow(dead_code)]
     fn send_warning(&self, message: String) {
+        tracing::debug!("Sending warning to client {}: {}", self.addr, message);
         self.send_status(Status::new(StatusLevel::Warning, message));
     }
 
@@ -819,6 +987,32 @@ impl ConnectedClient {
                 self.send_control_msg(message);
             }
         }
+    }
+
+    /// Send a fetch asset error to the client.
+    fn send_asset_error(&self, error: &str, request_id: u32) {
+        // https://github.com/foxglove/ws-protocol/blob/main/docs/spec.md#fetch-asset-response
+        let mut buf = Vec::with_capacity(10 + error.len());
+        buf.put_u8(protocol::server::BinaryOpcode::FetchAssetResponse as u8);
+        buf.put_u32_le(request_id);
+        buf.put_u8(1); // 1 for error
+        buf.put_u32_le(error.len() as u32);
+        buf.put(error.as_bytes());
+        let message = Message::binary(buf);
+        self.send_control_msg(message);
+    }
+
+    /// Send a fetch asset response to the client.
+    fn send_asset_response(&self, response: &[u8], request_id: u32) {
+        // https://github.com/foxglove/ws-protocol/blob/main/docs/spec.md#fetch-asset-response
+        let mut buf = Vec::with_capacity(10 + response.len());
+        buf.put_u8(protocol::server::BinaryOpcode::FetchAssetResponse as u8);
+        buf.put_u32_le(request_id);
+        buf.put_u8(0); // 0 for success
+        buf.put_u32_le(0); // error length, 0 for no error
+        buf.put(response);
+        let message = Message::binary(buf);
+        self.send_control_msg(message);
     }
 }
 
@@ -853,8 +1047,13 @@ impl Server {
             supported_encodings.extend(
                 opts.services
                     .values()
-                    .flat_map(|svc| svc.schema().request().map(|s| s.encoding.clone())),
+                    .filter_map(|svc| svc.schema().request().map(|s| s.encoding.clone())),
             );
+        }
+
+        // If the server was declared with fetch asset handler, automatically add the "assets" capability
+        if opts.fetch_asset_handler.is_some() {
+            capabilities.insert(Capability::Assets);
         }
 
         Server {
@@ -874,8 +1073,11 @@ impl Server {
             subscribed_parameters: parking_lot::Mutex::new(HashSet::new()),
             capabilities,
             supported_encodings,
+            connection_graph: parking_lot::Mutex::new(ConnectionGraph::new()),
+            connection_graph_subscriber_count: parking_lot::Mutex::new(0),
             cancellation_token: CancellationToken::new(),
             services: parking_lot::RwLock::new(ServiceMap::from_iter(opts.services.into_values())),
+            fetch_asset_handler: opts.fetch_asset_handler,
         }
     }
 
@@ -941,7 +1143,7 @@ impl Server {
         self.cancellation_token.cancel();
     }
 
-    async fn advertise_channel(&self, channel: Arc<Channel>) {
+    fn advertise_channel(&self, channel: &Arc<Channel>) {
         if channel.schema.is_none() {
             tracing::error!(
                 "Ignoring advertise channel for {} because a schema is required",
@@ -952,7 +1154,7 @@ impl Server {
 
         self.channels.write().insert(channel.id, channel.clone());
 
-        let message = match protocol::server::advertisement(&channel) {
+        let message = match protocol::server::advertisement(channel) {
             Ok(message) => message,
             Err(err) => {
                 tracing::error!("Error creating advertise channel message to client: {err}");
@@ -973,7 +1175,7 @@ impl Server {
         }
     }
 
-    async fn unadvertise_channel(&self, channel_id: ChannelId) {
+    fn unadvertise_channel(&self, channel_id: ChannelId) {
         self.channels.write().remove(&channel_id);
 
         let message = protocol::server::unadvertise(channel_id);
@@ -1003,7 +1205,7 @@ impl Server {
 
     /// Publish the current timestamp to all clients.
     #[cfg(feature = "unstable")]
-    pub async fn broadcast_time(&self, timestamp_nanos: u64) {
+    pub fn broadcast_time(&self, timestamp_nanos: u64) {
         if !self.capabilities.contains(&Capability::Time) {
             tracing::error!("Server does not support time capability");
             return;
@@ -1078,12 +1280,9 @@ impl Server {
     /// - Advertise existing services
     /// - Listen for client meesages
     async fn handle_connection(self: Arc<Self>, stream: TcpStream, addr: SocketAddr) {
-        let ws_stream = match do_handshake(stream).await {
-            Ok(ws_stream) => ws_stream,
-            Err(_) => {
-                tracing::error!("Dropping client {addr}: {}", WSError::HandshakeError);
-                return;
-            }
+        let Ok(ws_stream) = do_handshake(stream).await else {
+            tracing::error!("Dropping client {addr}: {}", WSError::HandshakeError);
+            return;
         };
 
         let (mut ws_sender, mut ws_receiver) = ws_stream.split();
@@ -1104,7 +1303,8 @@ impl Server {
         let id = ClientId(CLIENT_ID.fetch_add(1, Relaxed));
 
         let (data_tx, data_rx) = flume::bounded(self.message_backlog_size as usize);
-        let (ctrl_tx, ctrl_rx) = flume::bounded(DEFAULT_CONTROL_PLANE_BACKLOG_SIZE);
+        let (ctrl_tx, ctrl_rx) = flume::bounded(self.message_backlog_size as usize);
+        let cancellation_token = CancellationToken::new();
 
         let new_client = Arc::new_cyclic(|weak_self| ConnectedClient {
             id,
@@ -1115,12 +1315,15 @@ impl Server {
             data_plane_rx: data_rx,
             control_plane_tx: ctrl_tx,
             control_plane_rx: ctrl_rx,
-            service_call_sem: service::Semaphore::new(DEFAULT_SERVICE_CALLS_PER_CLIENT),
+            service_call_sem: Semaphore::new(DEFAULT_SERVICE_CALLS_PER_CLIENT),
+            fetch_asset_sem: Semaphore::new(DEFAULT_FETCH_ASSET_CALLS_PER_CLIENT),
             subscriptions: parking_lot::Mutex::new(BiHashMap::new()),
             advertised_channels: parking_lot::Mutex::new(HashMap::new()),
             parameter_subscriptions: parking_lot::Mutex::new(HashSet::new()),
             server_listener: self.listener.clone(),
             server: self.weak_self.clone(),
+            cancellation_token: cancellation_token.clone(),
+            subscribed_to_connection_graph: AtomicBool::new(false),
         });
 
         self.register_client_and_advertise(new_client.clone()).await;
@@ -1174,19 +1377,22 @@ impl Server {
 
         // Run send and receive loops concurrently, and wait for receive to complete
         tokio::select! {
-            _ = receive_messages => {
-                tracing::debug!("Receive messages task completed");
-            }
             _ = send_control_messages => {
                 tracing::error!("Send control messages task completed");
             }
             _ = send_messages => {
                 tracing::error!("Send messages task completed");
             }
+            _ = receive_messages => {
+                tracing::debug!("Receive messages task completed");
+            }
+            _ = cancellation_token.cancelled() => {
+                tracing::warn!("Server disconnecting slow client {}", new_client.addr);
+            }
         }
 
         self.clients.retain(|c| !Arc::ptr_eq(c, &new_client));
-        new_client.on_disconnect(&self);
+        new_client.on_disconnect(&self).await;
     }
 
     async fn register_client_and_advertise(&self, client: Arc<ConnectedClient>) {
@@ -1208,7 +1414,7 @@ impl Server {
             services.len(),
         );
 
-        for channel in channels.into_iter() {
+        for channel in channels {
             let message = match protocol::server::advertisement(&channel) {
                 Ok(message) => message,
                 Err(err) => {
@@ -1300,7 +1506,7 @@ impl Server {
         // Send advertisements.
         let clients = self.clients.get();
         for client in clients.iter().cloned() {
-            for (name, id) in new_names.iter() {
+            for (name, id) in &new_names {
                 tracing::debug!(
                     "Advertising service {name} with id {id} to client {}",
                     client.addr
@@ -1333,12 +1539,12 @@ impl Server {
 
         // Prepare an unadvertisement.
         let msg = Message::text(protocol::server::unadvertise_services(
-            &old_services.keys().cloned().collect::<Vec<_>>(),
+            &old_services.keys().copied().collect::<Vec<_>>(),
         ));
 
         let clients = self.clients.get();
         for client in clients.iter().cloned() {
-            for (id, name) in old_services.iter() {
+            for (id, name) in &old_services {
                 tracing::debug!(
                     "Unadvertising service {name} with id {id} to client {}",
                     client.addr
@@ -1351,6 +1557,28 @@ impl Server {
     // Looks up a service by ID.
     fn get_service(&self, id: ServiceId) -> Option<Arc<Service>> {
         self.services.read().get_by_id(id)
+    }
+
+    /// Sends a connection graph update to all clients.
+    pub(crate) fn replace_connection_graph(
+        &self,
+        replacement_graph: ConnectionGraph,
+    ) -> Result<(), FoxgloveError> {
+        // Make sure that the server supports connection graph.
+        if !self.capabilities.contains(&Capability::ConnectionGraph) {
+            return Err(FoxgloveError::ConnectionGraphNotSupported);
+        }
+
+        // Hold the lock while sending to synchronize with subscribe and unsubscribe.
+        let mut connection_graph = self.connection_graph.lock();
+        let json_diff = connection_graph.update(replacement_graph);
+        let msg = Message::text(json_diff);
+        for client in self.clients.get().iter() {
+            if client.is_subscribed_to_connection_graph() {
+                client.send_control_msg(msg.clone());
+            }
+        }
+        Ok(())
     }
 }
 
@@ -1418,7 +1646,7 @@ impl LogSink for Server {
         let clients = self.clients.get();
         for client in clients.iter() {
             let subscriptions = client.subscriptions.lock();
-            let Some(subscription_id) = subscriptions.get_by_left(&channel.id).cloned() else {
+            let Some(subscription_id) = subscriptions.get_by_left(&channel.id).copied() else {
                 continue;
             };
 
@@ -1440,17 +1668,13 @@ impl LogSink for Server {
     /// Server has an available channel. Advertise to all clients.
     fn add_channel(&self, channel: &Arc<Channel>) {
         let server = self.arc();
-        let ch = channel.clone();
-        self.runtime
-            .spawn(async move { server.advertise_channel(ch).await });
+        server.advertise_channel(channel);
     }
 
     /// A channel is being removed. Unadvertise to all clients.
     fn remove_channel(&self, channel: &Channel) {
         let server = self.arc();
-        let channel_id = channel.id();
-        self.runtime
-            .spawn(async move { server.unadvertise_channel(channel_id).await });
+        server.unadvertise_channel(channel.id());
     }
 }
 

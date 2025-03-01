@@ -49,6 +49,7 @@ class WebSocketServer:
     def remove_status(self, ids: list[str]) -> None: ...
     def add_services(self, services: list["Service"]) -> None: ...
     def remove_services(self, names: list[str]) -> None: ...
+    def publish_connection_graph(self, graph: "ConnectionGraph") -> None: ...
 
 class BaseChannel:
     """
@@ -59,9 +60,7 @@ class BaseChannel:
         cls,
         topic: str,
         message_encoding: str,
-        schema_name: Optional[str] = None,
-        schema_encoding: Optional[str] = None,
-        schema_data: Optional[bytes] = None,
+        schema: Optional["Schema"] = None,
         metadata: Optional[List[Tuple[str, str]]] = None,
     ) -> "BaseChannel": ...
     def log(
@@ -71,16 +70,27 @@ class BaseChannel:
         log_time: Optional[int] = None,
         sequence: Optional[int] = None,
     ) -> None: ...
+    def close(self) -> None: ...
 
 class Capability(Enum):
     """
-    A capability that the websocket server advertises to its clients.
+    An enumeration of capabilities that the websocket server can advertise to its clients.
     """
 
     ClientPublish = ...
+    """Allow clients to advertise channels to send data messages to the server."""
+
+    Connectiongraph = ...
+    """Allow clients to subscribe and make connection graph updates"""
+
     Parameters = ...
+    """Allow clients to get & set parameters."""
+
     Services = ...
+    """Allow clients to call services."""
+
     Time = ...
+    """Inform clients about the latest server time."""
 
 class Client:
     """
@@ -120,8 +130,13 @@ class ParameterType(Enum):
     """
 
     ByteArray = ...
+    """A byte array."""
+
     Float64 = ...
+    """A decimal or integer value that can be represented as a `float64`."""
+
     Float64Array = ...
+    """An array of decimal or integer values that can be represented as `float64`s."""
 
 class ParameterValue:
     """
@@ -129,20 +144,30 @@ class ParameterValue:
     """
 
     class Bool:
+        """A boolean value."""
+
         def __new__(cls, value: bool) -> "ParameterValue.Bool": ...
 
     class Number:
+        """A decimal or integer value."""
+
         def __new__(cls, value: float) -> "ParameterValue.Number": ...
 
     class Bytes:
+        """A byte array."""
+
         def __new__(cls, value: bytes) -> "ParameterValue.Bytes": ...
 
     class Array:
+        """An array of parameter values."""
+
         def __new__(
             cls, value: List["AnyParameterValue"]
         ) -> "ParameterValue.Array": ...
 
     class Dict:
+        """An associative map of parameter values."""
+
         def __new__(
             cls, value: dict[str, "AnyParameterValue"]
         ) -> "ParameterValue.Dict": ...
@@ -155,7 +180,9 @@ AnyParameterValue = Union[
     ParameterValue.Dict,
 ]
 
-class Request:
+AssetHandler = Callable[[str], Optional[bytes]]
+
+class ServiceRequest:
     """
     A websocket service request.
     """
@@ -166,7 +193,7 @@ class Request:
     encoding: str
     payload: bytes
 
-ServiceHandler = Callable[["Request"], bytes]
+ServiceHandler = Callable[["ServiceRequest"], bytes]
 
 class Service:
     """
@@ -234,7 +261,18 @@ class Schema:
         data: bytes,
     ) -> "Schema": ...
 
+class ConnectionGraph:
+    """
+    A graph of connections between clients.
+    """
+
+    def __new__(cls) -> "ConnectionGraph": ...
+    def set_published_topic(self, topic: str, publisher_ids: List[str]) -> None: ...
+    def set_subscribed_topic(self, topic: str, subscriber_ids: List[str]) -> None: ...
+    def set_advertised_service(self, service: str, provider_ids: List[str]) -> None: ...
+
 def start_server(
+    *,
     name: Optional[str] = None,
     host: Optional[str] = "127.0.0.1",
     port: Optional[int] = 8765,
@@ -242,6 +280,7 @@ def start_server(
     server_listener: Any = None,
     supported_encodings: Optional[List[str]] = None,
     services: Optional[List["Service"]] = None,
+    asset_handler: Optional["AssetHandler"] = None,
 ) -> WebSocketServer:
     """
     Start a websocket server for live visualization.
