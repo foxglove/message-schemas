@@ -12,7 +12,7 @@ struct WebSocketServerOptions {
   uint16_t port;
 };
 
-class WebSocketServer {
+class WebSocketServer final {
 public:
   explicit WebSocketServer(WebSocketServerOptions options);
 

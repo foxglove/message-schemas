@@ -14,7 +14,7 @@ struct Schema {
   size_t dataLen;
 };
 
-class Channel {
+class Channel final {
 public:
   Channel(std::string topic, std::string messageEncoding, std::optional<Schema> schema);
 
