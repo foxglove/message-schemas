@@ -4,7 +4,7 @@
 //! Timestamp in protobuf, even though we schematize those types differently. This module provides
 //! an infallible translation from the foxglove schema to the underlying protobuf representation.
 //!
-//! This module lives outside crate::schemas, because everything under the schemas/ direcory is
+//! This module lives outside `crate::schemas`, because everything under the schemas/ direcory is
 //! generated.
 
 use crate::convert::{RangeError, SaturatingFrom};
@@ -158,13 +158,13 @@ impl Duration {
 
     /// Creates a `Duration` from `f64` seconds, or fails if the value is unrepresentable.
     pub fn try_from_secs_f64(secs: f64) -> Result<Self, RangeError> {
-        if secs < i32::MIN as f64 {
+        if secs < f64::from(i32::MIN) {
             Err(RangeError::LowerBound)
-        } else if secs >= i32::MAX as f64 + 1.0 {
+        } else if secs >= f64::from(i32::MAX) + 1.0 {
             Err(RangeError::UpperBound)
         } else {
             let mut sec = secs as i32;
-            let mut nsec = ((secs - sec as f64) * 1e9) as i32;
+            let mut nsec = ((secs - f64::from(sec)) * 1e9) as i32;
             if nsec < 0 {
                 sec -= 1;
                 nsec += 1_000_000_000;
@@ -352,11 +352,11 @@ impl Timestamp {
     pub fn try_from_epoch_secs_f64(secs: f64) -> Result<Self, RangeError> {
         if secs < 0.0 {
             Err(RangeError::LowerBound)
-        } else if secs >= u32::MAX as f64 + 1.0 {
+        } else if secs >= f64::from(u32::MAX) + 1.0 {
             Err(RangeError::UpperBound)
         } else {
             let sec = secs as u32;
-            let nsec = ((secs - sec as f64) * 1e9) as u32;
+            let nsec = ((secs - f64::from(sec)) * 1e9) as u32;
             Ok(Self::new(sec, nsec))
         }
     }

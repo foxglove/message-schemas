@@ -100,13 +100,13 @@ fn test_duration_from_secs_f64() {
 
     // min
     assert_eq!(
-        Duration::try_from_secs_f64(i32::MIN as f64).unwrap(),
+        Duration::try_from_secs_f64(i32::MIN.into()).unwrap(),
         Duration::MIN,
     );
 
     // nearly max
     assert_eq!(
-        Duration::try_from_secs_f64(i32::MAX as f64).unwrap(),
+        Duration::try_from_secs_f64(i32::MAX.into()).unwrap(),
         Duration {
             sec: i32::MAX,
             nsec: 0
@@ -114,25 +114,28 @@ fn test_duration_from_secs_f64() {
     );
 
     // fractional seconds beyond i32::MAX seconds are supported, but precision is limited.
-    assert_matches!(Duration::try_from_secs_f64(i32::MAX as f64 + 0.1), Ok(_));
+    assert_matches!(
+        Duration::try_from_secs_f64(f64::from(i32::MAX) + 0.1),
+        Ok(_)
+    );
 
     // out of range negative
     assert_matches!(
-        Duration::try_from_secs_f64(i32::MIN as f64 - 0.1),
+        Duration::try_from_secs_f64(f64::from(i32::MIN) - 0.1),
         Err(RangeError::LowerBound)
     );
     assert_eq!(
-        Duration::saturating_from_secs_f64(i32::MIN as f64 - 0.1),
+        Duration::saturating_from_secs_f64(f64::from(i32::MIN) - 0.1),
         Duration::MIN
     );
 
     // out of range positive
     assert_matches!(
-        Duration::try_from_secs_f64(i32::MAX as f64 + 1.),
+        Duration::try_from_secs_f64(f64::from(i32::MAX) + 1.),
         Err(RangeError::UpperBound)
     );
     assert_eq!(
-        Duration::saturating_from_secs_f64(i32::MAX as f64 + 1.),
+        Duration::saturating_from_secs_f64(f64::from(i32::MAX) + 1.),
         Duration::MAX
     );
 }
@@ -208,7 +211,7 @@ fn test_timestamp_from_epoch_secs_f64() {
 
     // nearly max
     assert_eq!(
-        Timestamp::try_from_epoch_secs_f64(u32::MAX as f64).unwrap(),
+        Timestamp::try_from_epoch_secs_f64(u32::MAX.into()).unwrap(),
         Timestamp {
             sec: u32::MAX,
             nsec: 0
@@ -217,7 +220,7 @@ fn test_timestamp_from_epoch_secs_f64() {
 
     // fractional seconds beyond u32::MAX seconds are supported, but precision is limited.
     assert_matches!(
-        Timestamp::try_from_epoch_secs_f64(u32::MAX as f64 + 0.1),
+        Timestamp::try_from_epoch_secs_f64(f64::from(u32::MAX) + 0.1),
         Ok(_)
     );
 
@@ -233,11 +236,11 @@ fn test_timestamp_from_epoch_secs_f64() {
 
     // too future
     assert_matches!(
-        Timestamp::try_from_epoch_secs_f64(u32::MAX as f64 + 1.),
+        Timestamp::try_from_epoch_secs_f64(f64::from(u32::MAX) + 1.),
         Err(RangeError::UpperBound)
     );
     assert_eq!(
-        Timestamp::saturating_from_epoch_secs_f64(u32::MAX as f64 + 1.),
+        Timestamp::saturating_from_epoch_secs_f64(f64::from(u32::MAX) + 1.),
         Timestamp::MAX
     );
 }
@@ -252,7 +255,7 @@ fn test_timestamp_from_system_time() {
     // max
     let orig = std::time::UNIX_EPOCH
         .checked_add(std::time::Duration::from_nanos(
-            u32::MAX as u64 * 1_000_000_000 + 999_999_999,
+            u64::from(u32::MAX) * 1_000_000_000 + 999_999_999,
         ))
         .unwrap();
     let ts = Timestamp::try_from(orig).unwrap();
@@ -273,7 +276,7 @@ fn test_timestamp_from_system_time() {
 
     // too future
     let orig = std::time::UNIX_EPOCH
-        .checked_add(std::time::Duration::from_secs(u32::MAX as u64 + 1))
+        .checked_add(std::time::Duration::from_secs(u64::from(u32::MAX) + 1))
         .unwrap();
     assert_matches!(Timestamp::try_from(orig), Err(RangeError::UpperBound));
     assert_eq!(Timestamp::saturating_from(orig), Timestamp::MAX);
