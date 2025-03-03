@@ -4,23 +4,6 @@ use pyo3::exceptions::PyOverflowError;
 use pyo3::prelude::*;
 use pyo3::types::{timezone_utc, PyDateTime};
 
-enum NormalizeResult {
-    /// Nanoseconds already within range.
-    Ok(u32),
-    /// Nanoseconds overflowed into seconds. Result is `(sec, nsec)`.
-    Overflow(u32, u32),
-}
-
-/// Normalizes nsec to be on the range `[0, 1_000_000_000)`.
-fn normalize_nsec(nsec: u32) -> NormalizeResult {
-    if nsec < 1_000_000_000 {
-        NormalizeResult::Ok(nsec)
-    } else {
-        let sec = nsec / 1_000_000_000;
-        NormalizeResult::Overflow(sec, nsec % 1_000_000_000)
-    }
-}
-
 /// A timestamp in seconds and nanoseconds
 ///
 /// :param sec: The number of seconds since a user-defined epoch.
@@ -34,19 +17,25 @@ impl Timestamp {
     #[new]
     #[pyo3(signature = (sec, nsec=None))]
     fn new(sec: u32, nsec: Option<u32>) -> PyResult<Self> {
-        let (sec, nsec) = match normalize_nsec(nsec.unwrap_or(0)) {
-            NormalizeResult::Ok(nsec) => (sec, nsec),
-            NormalizeResult::Overflow(extra_sec, nsec) => (
-                sec.checked_add(extra_sec)
-                    .ok_or_else(|| PyOverflowError::new_err("timestamp out of range"))?,
-                nsec,
-            ),
-        };
-        Ok(Self(foxglove::schemas::Timestamp { sec, nsec }))
+        let timestamp = foxglove::schemas::Timestamp::new_checked(sec, nsec.unwrap_or(0))
+            .ok_or_else(|| PyOverflowError::new_err("timestamp out of range"))?;
+        Ok(Self(timestamp))
     }
 
     fn __repr__(&self) -> String {
-        format!("Timestamp(sec={}, nsec={})", self.0.sec, self.0.nsec).to_string()
+        format!("Timestamp(sec={}, nsec={})", self.0.sec(), self.0.nsec()).to_string()
+    }
+
+    /// The number of seconds in the timestamp.
+    #[getter]
+    fn sec(&self) -> u32 {
+        self.0.sec()
+    }
+
+    /// The number of fractional seconds in the timestamp, as nanoseconds.
+    #[getter]
+    fn nsec(&self) -> u32 {
+        self.0.nsec()
     }
 
     /// Creates a :py:class:`Timestamp` from an epoch timestamp, such as is returned by
@@ -96,10 +85,10 @@ impl Timestamp {
         let days: i32 = td.getattr(py, "days")?.extract(py)?;
         let seconds: u32 = td.getattr(py, "seconds")?.extract(py)?;
         let microseconds: u32 = td.getattr(py, "microseconds")?.extract(py)?;
-        if days < 0 {
+        let Ok(days) = u32::try_from(days) else {
             return Err(PyOverflowError::new_err("timestamp out of range"));
-        }
-        let Some(sec) = (days as u32)
+        };
+        let Some(sec) = days
             .checked_mul(24 * 3600)
             .and_then(|s| s.checked_add(seconds))
         else {
@@ -128,19 +117,25 @@ impl Duration {
     #[new]
     #[pyo3(signature = (sec, nsec=None))]
     fn new(sec: i32, nsec: Option<u32>) -> PyResult<Self> {
-        let (sec, nsec) = match normalize_nsec(nsec.unwrap_or(0)) {
-            NormalizeResult::Ok(nsec) => (sec, nsec),
-            NormalizeResult::Overflow(extra_sec, nsec) => (
-                sec.checked_add(extra_sec as i32)
-                    .ok_or_else(|| PyOverflowError::new_err("duration out of range"))?,
-                nsec,
-            ),
-        };
-        Ok(Self(foxglove::schemas::Duration { sec, nsec }))
+        let duration = foxglove::schemas::Duration::new_checked(sec, nsec.unwrap_or(0))
+            .ok_or_else(|| PyOverflowError::new_err("duration out of range"))?;
+        Ok(Self(duration))
     }
 
     fn __repr__(&self) -> String {
-        format!("Duration(sec={}, nsec={})", self.0.sec, self.0.nsec).to_string()
+        format!("Duration(sec={}, nsec={})", self.0.sec(), self.0.nsec()).to_string()
+    }
+
+    /// The number of seconds in the duration.
+    #[getter]
+    fn sec(&self) -> i32 {
+        self.0.sec()
+    }
+
+    /// The number of fractional seconds in the duration, as nanoseconds.
+    #[getter]
+    fn nsec(&self) -> u32 {
+        self.0.nsec()
     }
 
     /// Creates a :py:class:`Duration` from seconds.

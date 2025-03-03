@@ -27,7 +27,7 @@ impl TryFrom<chrono::TimeDelta> for Duration {
             sec -= 1;
             u32::try_from(subsec_nanos + 1_000_000_000).expect("positive")
         };
-        Ok(Self { sec, nsec })
+        Ok(Self::new(sec, nsec))
     }
 }
 
@@ -44,7 +44,7 @@ impl TryFrom<chrono::DateTime<chrono::Utc>> for Timestamp {
             });
         };
         let nsec = time.timestamp_subsec_nanos();
-        Ok(Self { sec, nsec })
+        Ok(Self::new(sec, nsec))
     }
 }
 
