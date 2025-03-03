@@ -9,7 +9,7 @@ use pyo3::types::{timezone_utc, PyDateTime};
 /// :param sec: The number of seconds since a user-defined epoch.
 /// :param nsec: The number of nanoseconds since the :py:attr:\`sec\` value.
 #[pyclass(module = "foxglove.schemas", eq)]
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Timestamp(pub(crate) foxglove::schemas::Timestamp);
 
 #[pymethods]
@@ -109,7 +109,7 @@ impl From<Timestamp> for foxglove::schemas::Timestamp {
 /// :param sec: The number of seconds in the duration.
 /// :param nsec: The number of nanoseconds in the positive direction.
 #[pyclass(module = "foxglove.schemas", eq)]
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Duration(pub(crate) foxglove::schemas::Duration);
 
 #[pymethods]
