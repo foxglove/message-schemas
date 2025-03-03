@@ -1441,8 +1441,8 @@ async fn test_slow_client() {
 
     _ = ws_client.next().await.expect("No serverInfo sent");
 
-    loop {
-        // Client should have been disconencted
+    for _ in 0..51 {
+        // Client should have been disconnected
         let msg = ws_client.next().await.expect("No message received");
         let msg = msg.expect("Failed to parse message");
         let text = msg.into_text().expect("Failed to get message text");
