@@ -5,6 +5,46 @@ from foxglove.schemas import Duration, Timestamp
 
 
 class TestTime(unittest.TestCase):
+    def test_duration_normalization(self) -> None:
+        self.assertEqual(
+            Duration(sec=0, nsec=1_111_222_333),
+            Duration(sec=1, nsec=111_222_333),
+        )
+        self.assertEqual(
+            Duration(sec=0, nsec=2**32 - 1),
+            Duration(sec=4, nsec=294_967_295),
+        )
+        self.assertEqual(
+            Duration(sec=-2, nsec=1_000_000_001),
+            Duration(sec=-1, nsec=1),
+        )
+        self.assertEqual(
+            Duration(sec=-(2**31), nsec=1_000_000_001),
+            Duration(sec=-(2**31) + 1, nsec=1),
+        )
+
+        # argument conversions
+        Duration(sec=-(2**31))
+        Duration(sec=0, nsec=2**32 - 1)
+        Duration(sec=2**31 - 1, nsec=999_999_999)
+        with self.assertRaises(OverflowError):
+            Duration(sec=-(2**31) - 1)
+        with self.assertRaises(OverflowError):
+            Duration(sec=2**31)
+        with self.assertRaises(OverflowError):
+            Duration(sec=0, nsec=-1)
+        with self.assertRaises(OverflowError):
+            Duration(sec=0, nsec=2**32)
+
+        # overflow past upper bound
+        with self.assertRaises(OverflowError):
+            Duration(sec=2**31 - 1, nsec=1_000_000_000)
+
+        # we don't handle this corner case, where seconds is beyond the lower
+        # bound, but nanoseconds overflow to bring the duration within range.
+        with self.assertRaises(OverflowError):
+            Duration(sec=-(2**31) - 1, nsec=1_000_000_000)
+
     def test_duration_from_secs(self) -> None:
         self.assertEqual(Duration.from_secs(1.123), Duration(sec=1, nsec=123_000_000))
         self.assertEqual(Duration.from_secs(-0.123), Duration(sec=-1, nsec=877_000_000))
@@ -37,6 +77,33 @@ class TestTime(unittest.TestCase):
 
         with self.assertRaises(OverflowError):
             Duration.from_timedelta(datetime.timedelta.max)
+
+    def test_timestamp_normalization(self) -> None:
+        self.assertEqual(
+            Timestamp(sec=0, nsec=1_111_222_333),
+            Timestamp(sec=1, nsec=111_222_333),
+        )
+        self.assertEqual(
+            Timestamp(sec=0, nsec=2**32 - 1),
+            Timestamp(sec=4, nsec=294_967_295),
+        )
+
+        # argument conversions
+        Timestamp(sec=0)
+        Timestamp(sec=0, nsec=2**32 - 1)
+        Timestamp(sec=2**32 - 1, nsec=999_999_999)
+        with self.assertRaises(OverflowError):
+            Timestamp(sec=-1)
+        with self.assertRaises(OverflowError):
+            Timestamp(sec=2**32)
+        with self.assertRaises(OverflowError):
+            Timestamp(sec=0, nsec=-1)
+        with self.assertRaises(OverflowError):
+            Timestamp(sec=0, nsec=2**32)
+
+        # overflow past upper bound
+        with self.assertRaises(OverflowError):
+            Timestamp(sec=2**32 - 1, nsec=1_000_000_000)
 
     def test_timestamp_from_epoch_secs(self) -> None:
         self.assertEqual(

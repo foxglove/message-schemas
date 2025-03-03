@@ -4,6 +4,23 @@ use pyo3::exceptions::PyOverflowError;
 use pyo3::prelude::*;
 use pyo3::types::{timezone_utc, PyDateTime};
 
+enum NormalizeResult {
+    /// Nanoseconds already within range.
+    Ok(u32),
+    /// Nanoseconds overflowed into seconds. Result is `(sec, nsec)`.
+    Overflow(u32, u32),
+}
+
+/// Normalizes nsec to be on the range `[0, 1_000_000_000)`.
+fn normalize_nsec(nsec: u32) -> NormalizeResult {
+    if nsec < 1_000_000_000 {
+        NormalizeResult::Ok(nsec)
+    } else {
+        let sec = nsec / 1_000_000_000;
+        NormalizeResult::Overflow(sec, nsec % 1_000_000_000)
+    }
+}
+
 /// A timestamp in seconds and nanoseconds
 ///
 /// :param sec: The number of seconds since a user-defined epoch.
@@ -16,9 +33,16 @@ pub struct Timestamp(pub(crate) foxglove::schemas::Timestamp);
 impl Timestamp {
     #[new]
     #[pyo3(signature = (sec, nsec=None))]
-    fn new(sec: u32, nsec: Option<u32>) -> Self {
-        let nsec = nsec.unwrap_or(0);
-        Self(foxglove::schemas::Timestamp { sec, nsec })
+    fn new(sec: u32, nsec: Option<u32>) -> PyResult<Self> {
+        let (sec, nsec) = match normalize_nsec(nsec.unwrap_or(0)) {
+            NormalizeResult::Ok(nsec) => (sec, nsec),
+            NormalizeResult::Overflow(extra_sec, nsec) => (
+                sec.checked_add(extra_sec)
+                    .ok_or_else(|| PyOverflowError::new_err("timestamp out of range"))?,
+                nsec,
+            ),
+        };
+        Ok(Self(foxglove::schemas::Timestamp { sec, nsec }))
     }
 
     fn __repr__(&self) -> String {
@@ -81,7 +105,7 @@ impl Timestamp {
         else {
             return Err(PyOverflowError::new_err("timestamp out of range"));
         };
-        Ok(Self::new(sec, Some(microseconds * 1000)))
+        Self::new(sec, Some(microseconds * 1000))
     }
 }
 
@@ -103,9 +127,16 @@ pub struct Duration(pub(crate) foxglove::schemas::Duration);
 impl Duration {
     #[new]
     #[pyo3(signature = (sec, nsec=None))]
-    fn new(sec: i32, nsec: Option<u32>) -> Self {
-        let nsec = nsec.unwrap_or(0);
-        Self(foxglove::schemas::Duration { sec, nsec })
+    fn new(sec: i32, nsec: Option<u32>) -> PyResult<Self> {
+        let (sec, nsec) = match normalize_nsec(nsec.unwrap_or(0)) {
+            NormalizeResult::Ok(nsec) => (sec, nsec),
+            NormalizeResult::Overflow(extra_sec, nsec) => (
+                sec.checked_add(extra_sec as i32)
+                    .ok_or_else(|| PyOverflowError::new_err("duration out of range"))?,
+                nsec,
+            ),
+        };
+        Ok(Self(foxglove::schemas::Duration { sec, nsec }))
     }
 
     fn __repr__(&self) -> String {
@@ -153,7 +184,7 @@ impl Duration {
         else {
             return Err(PyOverflowError::new_err("duration out of range"));
         };
-        Ok(Self::new(sec, Some(microseconds * 1000)))
+        Self::new(sec, Some(microseconds * 1000))
     }
 }
 
