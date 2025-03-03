@@ -10,7 +10,7 @@ use pyo3::types::{timezone_utc, PyDateTime};
 /// :param nsec: The number of nanoseconds since the :py:attr:\`sec\` value.
 #[pyclass(module = "foxglove.schemas", eq)]
 #[derive(Clone, PartialEq, Eq)]
-pub struct Timestamp(pub(crate) foxglove::schemas::Timestamp);
+pub struct Timestamp(foxglove::schemas::Timestamp);
 
 #[pymethods]
 impl Timestamp {
@@ -23,7 +23,7 @@ impl Timestamp {
     }
 
     fn __repr__(&self) -> String {
-        format!("Timestamp(sec={}, nsec={})", self.0.sec(), self.0.nsec()).to_string()
+        format!("Timestamp(sec={}, nsec={})", self.sec(), self.nsec()).to_string()
     }
 
     /// The number of seconds in the timestamp.
@@ -110,7 +110,7 @@ impl From<Timestamp> for foxglove::schemas::Timestamp {
 /// :param nsec: The number of nanoseconds in the positive direction.
 #[pyclass(module = "foxglove.schemas", eq)]
 #[derive(Clone, PartialEq, Eq)]
-pub struct Duration(pub(crate) foxglove::schemas::Duration);
+pub struct Duration(foxglove::schemas::Duration);
 
 #[pymethods]
 impl Duration {
@@ -123,7 +123,7 @@ impl Duration {
     }
 
     fn __repr__(&self) -> String {
-        format!("Duration(sec={}, nsec={})", self.0.sec(), self.0.nsec()).to_string()
+        format!("Duration(sec={}, nsec={})", self.sec(), self.nsec()).to_string()
     }
 
     /// The number of seconds in the duration.
