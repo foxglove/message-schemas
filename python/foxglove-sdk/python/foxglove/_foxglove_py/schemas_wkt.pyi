@@ -6,6 +6,9 @@ class Duration:
     A duration in seconds and nanoseconds
     """
 
+    sec: int
+    nsec: int
+
     def __new__(
         cls,
         sec: int,
@@ -41,6 +44,9 @@ class Timestamp:
     """
     A timestamp in seconds and nanoseconds
     """
+
+    sec: int
+    nsec: int
 
     def __new__(
         cls,
