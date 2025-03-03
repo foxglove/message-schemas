@@ -133,11 +133,9 @@ impl Duration {
     /// Returns `None` if the result is out of range. This can only happen if `nsec` is greater
     /// than `999_999_999`.
     pub fn new_checked(sec: i32, nsec: u32) -> Option<Self> {
-        if let Some((sec, nsec)) = normalize_nsec(nsec).carry_i32(sec) {
-            Some(Self { sec, nsec })
-        } else {
-            None
-        }
+        normalize_nsec(nsec)
+            .carry_i32(sec)
+            .map(|(sec, nsec)| Self { sec, nsec })
     }
 
     /// Creates a new normalized duration.
@@ -326,11 +324,9 @@ impl Timestamp {
     /// Returns `None` if the result is out of range. This can only happen if `nsec` is greater
     /// than `999_999_999`.
     pub fn new_checked(sec: u32, nsec: u32) -> Option<Self> {
-        if let Some((sec, nsec)) = normalize_nsec(nsec).carry_u32(sec) {
-            Some(Self { sec, nsec })
-        } else {
-            None
-        }
+        normalize_nsec(nsec)
+            .carry_u32(sec)
+            .map(|(sec, nsec)| Self { sec, nsec })
     }
 
     /// Creates a new normalized timestamp.
