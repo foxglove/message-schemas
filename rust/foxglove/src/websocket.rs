@@ -1637,12 +1637,7 @@ fn send_lossy(
 }
 
 impl LogSink for Server {
-    fn log(
-        &self,
-        channel: &Arc<Channel>,
-        msg: &[u8],
-        metadata: &Metadata,
-    ) -> Result<(), FoxgloveError> {
+    fn log(&self, channel: &Channel, msg: &[u8], metadata: &Metadata) -> Result<(), FoxgloveError> {
         let clients = self.clients.get();
         for client in clients.iter() {
             let subscriptions = client.subscriptions.lock();

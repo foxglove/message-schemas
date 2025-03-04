@@ -27,7 +27,7 @@ impl<W: Write + Seek> WriterState<W> {
 
     fn log(
         &mut self,
-        channel: &Arc<Channel>,
+        channel: &Channel,
         msg: &[u8],
         metadata: &Metadata,
     ) -> Result<(), FoxgloveError> {
@@ -95,12 +95,7 @@ impl<W: Write + Seek> McapSink<W> {
 }
 
 impl<W: Write + Seek + Send> LogSink for McapSink<W> {
-    fn log(
-        &self,
-        channel: &Arc<Channel>,
-        msg: &[u8],
-        metadata: &Metadata,
-    ) -> Result<(), FoxgloveError> {
+    fn log(&self, channel: &Channel, msg: &[u8], metadata: &Metadata) -> Result<(), FoxgloveError> {
         _ = metadata;
         let mut guard = self.0.lock();
         let writer = guard.as_mut().ok_or(FoxgloveError::SinkClosed)?;
