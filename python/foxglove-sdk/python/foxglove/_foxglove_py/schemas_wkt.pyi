@@ -6,14 +6,15 @@ class Duration:
     A duration in seconds and nanoseconds
     """
 
-    sec: int
-    nsec: int
-
     def __new__(
         cls,
         sec: int,
         nsec: Optional[int] = None,
     ) -> "Duration": ...
+    @property
+    def sec(self) -> int: ...
+    @property
+    def nsec(self) -> int: ...
     @staticmethod
     def from_secs(secs: float) -> "Duration":
         """
@@ -45,14 +46,15 @@ class Timestamp:
     A timestamp in seconds and nanoseconds
     """
 
-    sec: int
-    nsec: int
-
     def __new__(
         cls,
         sec: int,
         nsec: Optional[int] = None,
     ) -> "Timestamp": ...
+    @property
+    def sec(self) -> int: ...
+    @property
+    def nsec(self) -> int: ...
     @staticmethod
     def from_epoch_secs(timestamp: float) -> "Timestamp":
         """
