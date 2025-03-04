@@ -24,9 +24,18 @@ class TestTime(unittest.TestCase):
         )
 
         # argument conversions
-        Duration(sec=-(2**31))
-        Duration(sec=0, nsec=2**32 - 1)
-        Duration(sec=2**31 - 1, nsec=999_999_999)
+        d = Duration(sec=-(2**31))
+        self.assertEqual(d.sec, -(2**31))
+        self.assertEqual(d.nsec, 0)
+
+        d = Duration(sec=0, nsec=2**32 - 1)
+        self.assertEqual(d.sec, 4)
+        self.assertEqual(d.nsec, 294_967_295)
+
+        d = Duration(sec=2**31 - 1, nsec=999_999_999)
+        self.assertEqual(d.sec, 2**31 - 1)
+        self.assertEqual(d.nsec, 999_999_999)
+
         with self.assertRaises(OverflowError):
             Duration(sec=-(2**31) - 1)
         with self.assertRaises(OverflowError):
@@ -89,9 +98,18 @@ class TestTime(unittest.TestCase):
         )
 
         # argument conversions
-        Timestamp(sec=0)
-        Timestamp(sec=0, nsec=2**32 - 1)
-        Timestamp(sec=2**32 - 1, nsec=999_999_999)
+        t = Timestamp(sec=0)
+        self.assertEqual(t.sec, 0)
+        self.assertEqual(t.nsec, 0)
+
+        t = Timestamp(sec=0, nsec=2**32 - 1)
+        self.assertEqual(t.sec, 4)
+        self.assertEqual(t.nsec, 294_967_295)
+
+        t = Timestamp(sec=2**32 - 1, nsec=999_999_999)
+        self.assertEqual(t.sec, 2**32 - 1)
+        self.assertEqual(t.nsec, 999_999_999)
+
         with self.assertRaises(OverflowError):
             Timestamp(sec=-1)
         with self.assertRaises(OverflowError):
