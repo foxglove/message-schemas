@@ -118,12 +118,13 @@ def _normalize_schema(
     elif isinstance(schema, dict):
         if schema.get("type") != "object":
             raise ValueError("Only object schemas are supported")
-        message_encoding = message_encoding or "json"
-        schema = Schema(
-            name=schema.get("title", "json_schema"),
-            encoding="jsonschema",
-            data=json.dumps(schema).encode("utf-8"),
+        return (
+            message_encoding or "json",
+            Schema(
+                name=schema.get("title", "json_schema"),
+                encoding="jsonschema",
+                data=json.dumps(schema).encode("utf-8"),
+            ),
         )
-        return message_encoding, schema
     else:
         raise ValueError(f"Invalid schema type: {type(schema)}")
