@@ -23,6 +23,7 @@ export function generateSchemaPrelude(): string {
 
   const imports = [
     "use crate::schemas_wkt::{Duration, Timestamp};",
+    "use bytes::Bytes;",
     "use pyo3::prelude::*;",
     "use pyo3::types::PyBytes;",
   ];
@@ -161,7 +162,7 @@ function generateMessageClass(schema: FoxgloveMessageSchema): string {
   function fieldValue(field: FoxgloveMessageField): string {
     if (field.type.type === "primitive" && field.type.name === "bytes") {
       // Special case — this is an `Option<Bound<'_, PyBytes>>`; see `rustOutputType`
-      return `data.map(|x| x.as_bytes().to_vec()).unwrap_or_default()`;
+      return `data.map(|x| Bytes::copy_from_slice(x.as_bytes())).unwrap_or_default()`;
     }
     switch (field.type.type) {
       case "primitive":

@@ -202,6 +202,7 @@ pub fn generate_protos(proto_path: &Path, out_dir: &Path) -> anyhow::Result<()> 
     config.extern_path(".google.protobuf.Duration", "crate::schemas::Duration");
     config.extern_path(".google.protobuf.Timestamp", "crate::schemas::Timestamp");
     config.out_dir(out_dir);
+    config.bytes(["."]);
 
     let mut fds = config
         .load_fds(&proto_files, &[proto_path])

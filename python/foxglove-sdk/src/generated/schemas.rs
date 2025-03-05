@@ -4,6 +4,7 @@
 #![allow(clippy::enum_variant_names)]
 #![allow(non_snake_case)]
 use crate::schemas_wkt::{Duration, Timestamp};
+use bytes::Bytes;
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
 
@@ -299,7 +300,9 @@ impl CompressedImage {
         Self(foxglove::schemas::CompressedImage {
             timestamp: timestamp.map(Into::into),
             frame_id,
-            data: data.map(|x| x.as_bytes().to_vec()).unwrap_or_default(),
+            data: data
+                .map(|x| Bytes::copy_from_slice(x.as_bytes()))
+                .unwrap_or_default(),
             format,
         })
     }
@@ -341,7 +344,9 @@ impl CompressedVideo {
         Self(foxglove::schemas::CompressedVideo {
             timestamp: timestamp.map(Into::into),
             frame_id,
-            data: data.map(|x| x.as_bytes().to_vec()).unwrap_or_default(),
+            data: data
+                .map(|x| Bytes::copy_from_slice(x.as_bytes()))
+                .unwrap_or_default(),
             format,
         })
     }
@@ -586,7 +591,9 @@ impl Grid {
             row_stride,
             cell_stride,
             fields: fields.into_iter().map(|x| x.into()).collect(),
-            data: data.map(|x| x.as_bytes().to_vec()).unwrap_or_default(),
+            data: data
+                .map(|x| Bytes::copy_from_slice(x.as_bytes()))
+                .unwrap_or_default(),
         })
     }
     fn __repr__(&self) -> String {
@@ -1090,7 +1097,9 @@ impl ModelPrimitive {
             override_color,
             url,
             media_type,
-            data: data.map(|x| x.as_bytes().to_vec()).unwrap_or_default(),
+            data: data
+                .map(|x| Bytes::copy_from_slice(x.as_bytes()))
+                .unwrap_or_default(),
         })
     }
     fn __repr__(&self) -> String {
@@ -1237,7 +1246,9 @@ impl PointCloud {
             pose: pose.map(Into::into),
             point_stride,
             fields: fields.into_iter().map(|x| x.into()).collect(),
-            data: data.map(|x| x.as_bytes().to_vec()).unwrap_or_default(),
+            data: data
+                .map(|x| Bytes::copy_from_slice(x.as_bytes()))
+                .unwrap_or_default(),
         })
     }
     fn __repr__(&self) -> String {
@@ -1485,7 +1496,9 @@ impl RawImage {
             height,
             encoding,
             step,
-            data: data.map(|x| x.as_bytes().to_vec()).unwrap_or_default(),
+            data: data
+                .map(|x| Bytes::copy_from_slice(x.as_bytes()))
+                .unwrap_or_default(),
         })
     }
     fn __repr__(&self) -> String {

@@ -145,8 +145,8 @@ pub struct CompressedImage {
     #[prost(string, tag = "4")]
     pub frame_id: ::prost::alloc::string::String,
     /// Compressed image data
-    #[prost(bytes = "vec", tag = "2")]
-    pub data: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "bytes", tag = "2")]
+    pub data: ::prost::bytes::Bytes,
     /// Image format
     ///
     /// Supported values: image media types supported by Chrome, such as `webp`, `jpeg`, `png`
@@ -187,8 +187,8 @@ pub struct CompressedVideo {
     ///    - Use the "Low overhead bitstream format" (section 5.2)
     ///    - Each CompressedVideo message should contain enough OBUs to decode exactly one video frame
     ///    - Each message containing a key frame must also include a Sequence Header OBU
-    #[prost(bytes = "vec", tag = "3")]
-    pub data: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "bytes", tag = "3")]
+    pub data: ::prost::bytes::Bytes,
     /// Video format.
     ///
     /// Supported values: `h264`, `h265`, `vp9`, `av1`.
@@ -290,8 +290,8 @@ pub struct Grid {
     #[prost(message, repeated, tag = "8")]
     pub fields: ::prost::alloc::vec::Vec<PackedElementField>,
     /// Grid cell data, interpreted using `fields`, in row-major (y-major) order
-    #[prost(bytes = "vec", tag = "9")]
-    pub data: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "bytes", tag = "9")]
+    pub data: ::prost::bytes::Bytes,
 }
 /// Array of annotations for a 2D image
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -586,8 +586,8 @@ pub struct ModelPrimitive {
     #[prost(string, tag = "6")]
     pub media_type: ::prost::alloc::string::String,
     /// Embedded model. One of `url` or `data` should be provided. If `data` is provided, `media_type` must be set to indicate the type of the data.
-    #[prost(bytes = "vec", tag = "7")]
-    pub data: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "bytes", tag = "7")]
+    pub data: ::prost::bytes::Bytes,
 }
 /// A field present within each element in a byte array of packed elements.
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -705,8 +705,8 @@ pub struct PointCloud {
     #[prost(message, repeated, tag = "5")]
     pub fields: ::prost::alloc::vec::Vec<PackedElementField>,
     /// Point data, interpreted using `fields`
-    #[prost(bytes = "vec", tag = "6")]
-    pub data: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "bytes", tag = "6")]
+    pub data: ::prost::bytes::Bytes,
 }
 /// An array of points on a 2D image
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -863,8 +863,8 @@ pub struct RawImage {
     #[prost(fixed32, tag = "5")]
     pub step: u32,
     /// Raw image data
-    #[prost(bytes = "vec", tag = "6")]
-    pub data: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "bytes", tag = "6")]
+    pub data: ::prost::bytes::Bytes,
 }
 /// A visual element in a 3D scene. An entity may be composed of multiple primitives which all share the same frame of reference.
 #[derive(Clone, PartialEq, ::prost::Message)]
