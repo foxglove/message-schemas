@@ -27,7 +27,7 @@ class Channel:
         Create a new channel for logging messages on a topic.
 
         :param topic: The topic name.
-        :param message_encoding: The message encoding. Optional and ignored if
+        :param message_encoding: The message encoding. Optional if
             :py:param:`schema` is a dictionary, in which case the message
             encoding is presumed to be "json".
         :param schema: A definition of your schema. Pass a :py:class:`Schema`
@@ -118,11 +118,12 @@ def _normalize_schema(
     elif isinstance(schema, dict):
         if schema.get("type") != "object":
             raise ValueError("Only object schemas are supported")
-
-        return "json", Schema(
+        message_encoding = message_encoding or "json"
+        schema = Schema(
             name=schema.get("title", "json_schema"),
             encoding="jsonschema",
             data=json.dumps(schema).encode("utf-8"),
         )
+        return message_encoding, schema
     else:
         raise ValueError(f"Invalid schema type: {type(schema)}")
