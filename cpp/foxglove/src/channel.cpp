@@ -3,10 +3,12 @@
 
 namespace foxglove {
 
-Channel::Channel(std::string topic, std::string messageEncoding, std::optional<Schema> schema)
+Channel::Channel(
+  std::string_view topic, std::string_view messageEncoding, std::optional<Schema> schema
+)
     : _impl(
         foxglove_channel_create(
-          topic.c_str(), messageEncoding.c_str(),
+          topic.data(), messageEncoding.data(),
           schema ? &((const foxglove_schema&)foxglove_schema{
                      schema->name.data(),
                      schema->encoding.data(),

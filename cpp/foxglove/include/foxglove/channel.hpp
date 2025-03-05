@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -16,7 +18,7 @@ struct Schema {
 
 class Channel final {
 public:
-  Channel(std::string topic, std::string messageEncoding, std::optional<Schema> schema);
+  Channel(std::string_view topic, std::string_view messageEncoding, std::optional<Schema> schema);
 
   void log(
     const std::byte* data, size_t dataLen, std::optional<uint64_t> logTime = std::nullopt,
