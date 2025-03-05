@@ -1,5 +1,6 @@
 use clap::Parser;
 
+use foxglove::convert::SaturatingInto;
 use foxglove::schemas::{
     Color, CubePrimitive, FrameTransform, Pose, Quaternion, SceneEntity, SceneUpdate, Vector3,
 };
@@ -48,7 +49,7 @@ fn log(counter: u32) {
         entities: vec![SceneEntity {
             frame_id: "box".to_string(),
             id: "box_1".to_string(),
-            lifetime: Some(foxglove::schemas::Duration { sec: 10, nsec: 0 }),
+            lifetime: Some(Duration::from_millis(10_100).saturating_into()),
             cubes: vec![CubePrimitive {
                 pose: Some(Pose {
                     position: Some(Vector3 {

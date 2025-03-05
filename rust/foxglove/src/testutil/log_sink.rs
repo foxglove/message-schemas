@@ -1,14 +1,14 @@
+use crate::channel::ChannelId;
 use crate::log_sink::LogSink;
 use crate::{Channel, FoxgloveError, Metadata};
 use parking_lot::Mutex;
-use std::sync::Arc;
 
 pub struct MockSink;
 
 impl LogSink for MockSink {
     fn log(
         &self,
-        _channel: &Arc<Channel>,
+        _channel: &Channel,
         _msg: &[u8],
         _metadata: &Metadata,
     ) -> Result<(), FoxgloveError> {
@@ -17,7 +17,7 @@ impl LogSink for MockSink {
 }
 
 pub struct LogCall {
-    pub channel: Arc<Channel>,
+    pub channel_id: ChannelId,
     pub msg: Vec<u8>,
     pub metadata: Metadata,
 }
@@ -35,15 +35,10 @@ impl RecordingSink {
 }
 
 impl LogSink for RecordingSink {
-    fn log(
-        &self,
-        channel: &Arc<Channel>,
-        msg: &[u8],
-        metadata: &Metadata,
-    ) -> Result<(), FoxgloveError> {
+    fn log(&self, channel: &Channel, msg: &[u8], metadata: &Metadata) -> Result<(), FoxgloveError> {
         let mut recorded = self.recorded.lock();
         recorded.push(LogCall {
-            channel: channel.clone(),
+            channel_id: channel.id(),
             msg: msg.to_vec(),
             metadata: *metadata,
         });
@@ -65,7 +60,7 @@ impl std::fmt::Display for StrError {
 impl LogSink for ErrorSink {
     fn log(
         &self,
-        _channel: &Arc<Channel>,
+        _channel: &Channel,
         _msg: &[u8],
         _metadata: &Metadata,
     ) -> Result<(), FoxgloveError> {

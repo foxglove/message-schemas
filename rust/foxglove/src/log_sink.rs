@@ -10,12 +10,7 @@ use std::sync::Arc;
 pub trait LogSink: Send + Sync {
     /// log writes the message for the channel to the sink.
     /// metadata contains optional message metadata that may be used by some sink implementations.
-    fn log(
-        &self,
-        channel: &Arc<Channel>,
-        msg: &[u8],
-        metadata: &Metadata,
-    ) -> Result<(), FoxgloveError>;
+    fn log(&self, channel: &Channel, msg: &[u8], metadata: &Metadata) -> Result<(), FoxgloveError>;
 
     /// add_channel is called when a new channel is associated with this Sink.
     /// Sinks can track channels seen, and do new channel related things the first

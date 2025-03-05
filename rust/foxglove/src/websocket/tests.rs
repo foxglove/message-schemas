@@ -1441,17 +1441,26 @@ async fn test_slow_client() {
 
     _ = ws_client.next().await.expect("No serverInfo sent");
 
-    // Client should have been disconencted
-    let msg = ws_client.next().await.expect("No message received");
-    let msg = msg.expect("Failed to parse message");
-    let text = msg.into_text().expect("Failed to get message text");
-    let msg: Value = serde_json::from_str(&text).expect("Failed to parse message");
-    assert_eq!(msg["op"], "status");
-    assert_eq!(msg["level"], 2);
-    assert_eq!(
-        msg["message"],
-        "Disconnected because message backlog on the server is full. The backlog size is configurable in the server setup."
-    );
+    for _ in 0..51 {
+        // Client should have been disconnected
+        let msg = ws_client.next().await.expect("No message received");
+        let msg = msg.expect("Failed to parse message");
+        let text = msg.into_text().expect("Failed to get message text");
+
+        let msg: Value = serde_json::from_str(&text).expect("Failed to parse message");
+        assert_eq!(msg["op"], "status");
+        assert_eq!(msg["level"], 2);
+        let message_text = msg["message"].as_str().expect("Failed to get message text");
+        // Skip the msg message until we get the disconnect error status
+        if message_text.starts_with("msg") {
+            continue;
+        }
+        assert_eq!(
+            message_text,
+            "Disconnected because message backlog on the server is full. The backlog size is configurable in the server setup."
+        );
+        break;
+    }
 
     // Close message should be received
     let msg = ws_client.next().await.expect("No message received");

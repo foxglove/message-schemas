@@ -2,9 +2,9 @@ use crate::log_sink_set::LogSinkSet;
 use crate::{nanoseconds_since_epoch, Metadata, PartialMetadata};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
+use std::collections::BTreeMap;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering::Relaxed;
-use std::{collections::BTreeMap, sync::Arc};
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Deserialize, Serialize)]
 pub struct ChannelId(u64);
@@ -122,12 +122,12 @@ impl Channel {
     }
 
     /// Logs a message.
-    pub fn log(self: &Arc<Self>, msg: &[u8]) {
+    pub fn log(&self, msg: &[u8]) {
         self.log_with_meta(msg, PartialMetadata::default());
     }
 
     /// Logs a message with additional metadata.
-    pub fn log_with_meta(self: &Arc<Self>, msg: &[u8], opts: PartialMetadata) {
+    pub fn log_with_meta(&self, msg: &[u8], opts: PartialMetadata) {
         // Bail out early if there are no sinks (logging is disabled).
         if self.sinks.is_empty() {
             return;
@@ -274,7 +274,7 @@ mod test {
 
         let recorded = recording_sink.recorded.lock();
         assert_eq!(recorded.len(), 1);
-        assert_eq!(&recorded[0].channel, &channel);
+        assert_eq!(recorded[0].channel_id, channel.id());
         assert_eq!(recorded[0].msg, msg.to_vec());
         assert_eq!(recorded[0].metadata.sequence, 1);
         assert_eq!(

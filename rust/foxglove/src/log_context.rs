@@ -230,7 +230,7 @@ mod tests {
         assert_eq!(recorded1.len(), 1);
         assert_eq!(recorded2.len(), 1);
 
-        assert_eq!(&recorded1[0].channel, &channel);
+        assert_eq!(recorded1[0].channel_id, channel.id());
         assert_eq!(recorded1[0].msg, msg.to_vec());
         let metadata1 = &recorded1[0].metadata;
         assert!(metadata1.log_time >= now);
@@ -238,7 +238,7 @@ mod tests {
         assert_eq!(metadata1.log_time, metadata1.publish_time);
         assert!(metadata1.sequence > 0);
 
-        assert_eq!(&recorded2[0].channel, &channel);
+        assert_eq!(recorded2[0].channel_id, channel.id());
         assert_eq!(recorded2[0].msg, msg.to_vec());
         let metadata2 = &recorded2[0].metadata;
         assert!(metadata2.log_time >= now);
@@ -274,7 +274,7 @@ mod tests {
 
         let recorded = recording_sink.recorded.lock();
         assert_eq!(recorded.len(), 1);
-        assert_eq!(&recorded[0].channel, &channel);
+        assert_eq!(recorded[0].channel_id, channel.id());
         assert_eq!(recorded[0].msg, msg.to_vec());
         let metadata = &recorded[0].metadata;
         assert_eq!(metadata.sequence, opts.sequence.unwrap());
