@@ -19,10 +19,16 @@ Channel::Channel(std::string topic, std::string messageEncoding, std::optional<S
       ) {}
 
 void Channel::log(
-  const std::byte* data, size_t dataLen, uint64_t logTime, uint64_t publishTime, uint32_t sequence
+  const std::byte* data, size_t dataLen, std::optional<uint64_t> logTime,
+  std::optional<uint64_t> publishTime, std::optional<uint32_t> sequence
 ) {
   foxglove_channel_log(
-    _impl.get(), reinterpret_cast<const uint8_t*>(data), dataLen, logTime, publishTime, sequence
+    _impl.get(),
+    reinterpret_cast<const uint8_t*>(data),
+    dataLen,
+    logTime ? &*logTime : nullptr,
+    publishTime ? &*publishTime : nullptr,
+    sequence ? &*sequence : nullptr
   );
 }
 

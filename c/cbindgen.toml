@@ -23,6 +23,9 @@ after_includes = """
 #define FOXGLOVE_NONNULL
 #endif
 #endif
+
+
+typedef struct foxglove_channel foxglove_channel;
 """
 
 [ptr]

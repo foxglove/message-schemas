@@ -3,10 +3,14 @@
 #![warn(unsafe_attr_outside_unsafe)]
 
 use std::ffi::{c_char, CStr};
+use std::mem::ManuallyDrop;
 use std::sync::Arc;
 
 pub struct FoxgloveWebSocketServer(Option<foxglove::WebSocketServerBlockingHandle>);
-pub struct FoxgloveChannel(Arc<foxglove::Channel>);
+
+// cbindgen does not actually generate a declaration for this, so we manually write one in
+// after_includes
+pub use foxglove::Channel as FoxgloveChannel;
 
 #[repr(C)]
 pub struct FoxgloveSchema {
@@ -112,13 +116,14 @@ pub unsafe extern "C" fn foxglove_channel_create(
             foxglove::Schema::new(name, encoding, data)
         })
     };
-    Box::into_raw(Box::new(FoxgloveChannel(
+    Arc::into_raw(
         foxglove::ChannelBuilder::new(topic)
             .message_encoding(message_encoding)
             .schema(schema)
             .build()
             .expect("Failed to create channel"),
-    )))
+    )
+    .cast_mut()
 }
 
 /// Free a channel created via `foxglove_channel_create`.
@@ -127,7 +132,7 @@ pub extern "C" fn foxglove_channel_free(channel: Option<&mut FoxgloveChannel>) {
     let Some(channel) = channel else {
         return;
     };
-    drop(unsafe { Box::from_raw(channel) });
+    drop(unsafe { Arc::from_raw(channel) });
 }
 
 /// Log a message on a channel.
@@ -135,25 +140,29 @@ pub extern "C" fn foxglove_channel_free(channel: Option<&mut FoxgloveChannel>) {
 /// # Safety
 /// `data` must be non-null, and the range `[data, data + data_len)` must contain initialized data
 /// contained within a single allocated object.
+///
+/// `log_time`, `publish_time`, and `sequence` may be null, or may point to valid, properly-aligned values.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn foxglove_channel_log(
-    channel: Option<&mut FoxgloveChannel>,
+    channel: Option<&FoxgloveChannel>,
     data: *const u8,
     data_len: usize,
-    log_time: u64,
-    publish_time: u64,
-    sequence: u32,
+    log_time: *const u64,
+    publish_time: *const u64,
+    sequence: *const u32,
 ) {
     let channel = channel.expect("channel is required");
     if data.is_null() {
         panic!("data is required");
     }
-    channel.0.log_with_meta(
+    // avoid decrementing ref count
+    let channel = ManuallyDrop::new(unsafe { Arc::from_raw(channel) });
+    channel.log_with_meta(
         unsafe { std::slice::from_raw_parts(data, data_len) },
         foxglove::PartialMetadata {
-            log_time: Some(log_time),
-            publish_time: Some(publish_time),
-            sequence: Some(sequence),
+            log_time: unsafe { log_time.as_ref() }.copied(),
+            publish_time: unsafe { publish_time.as_ref() }.copied(),
+            sequence: unsafe { sequence.as_ref() }.copied(),
         },
     );
 }

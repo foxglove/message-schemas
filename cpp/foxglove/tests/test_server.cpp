@@ -13,7 +13,7 @@ TEST_CASE("Start and stop server") {
   server.stop();
 }
 
-TEST_CASE("Log a message") {
+TEST_CASE("Log a message with and without metadata") {
   foxglove::WebSocketServerOptions options;
   options.name = "unit-test";
   options.host = "127.0.0.1";
@@ -23,5 +23,6 @@ TEST_CASE("Log a message") {
 
   foxglove::Channel channel{"example", "json", std::nullopt};
   const uint8_t data[] = {1, 2, 3};
+  channel.log(reinterpret_cast<const std::byte*>(data), sizeof(data));
   channel.log(reinterpret_cast<const std::byte*>(data), sizeof(data), 1, 2, 3);
 }

@@ -26,6 +26,7 @@
 
 typedef struct foxglove_channel foxglove_channel;
 
+
 typedef struct foxglove_websocket_server foxglove_websocket_server;
 
 typedef struct foxglove_schema {
@@ -76,14 +77,14 @@ void foxglove_server_stop(struct foxglove_websocket_server *server);
  * optional pointer to a schema. The schema and the data it points to need only remain alive for
  * the duration of this function call (they will be copied).
  */
-struct foxglove_channel *foxglove_channel_create(const char *topic,
-                                                 const char *message_encoding,
-                                                 const struct foxglove_schema *schema);
+foxglove_channel *foxglove_channel_create(const char *topic,
+                                          const char *message_encoding,
+                                          const struct foxglove_schema *schema);
 
 /**
  * Free a channel created via `foxglove_channel_create`.
  */
-void foxglove_channel_free(struct foxglove_channel *channel);
+void foxglove_channel_free(foxglove_channel *channel);
 
 /**
  * Log a message on a channel.
@@ -91,13 +92,15 @@ void foxglove_channel_free(struct foxglove_channel *channel);
  * # Safety
  * `data` must be non-null, and the range `[data, data + data_len)` must contain initialized data
  * contained within a single allocated object.
+ *
+ * `log_time`, `publish_time`, and `sequence` may be null, or may point to valid, properly-aligned values.
  */
-void foxglove_channel_log(struct foxglove_channel *channel,
+void foxglove_channel_log(const foxglove_channel *channel,
                           const uint8_t *data,
                           size_t data_len,
-                          uint64_t log_time,
-                          uint64_t publish_time,
-                          uint32_t sequence);
+                          const uint64_t *log_time,
+                          const uint64_t *publish_time,
+                          const uint32_t *sequence);
 
 #ifdef __cplusplus
 }  // extern "C"
