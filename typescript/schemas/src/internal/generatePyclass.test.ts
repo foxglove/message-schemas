@@ -10,6 +10,7 @@ describe("generatePyclass", () => {
         #![allow(clippy::enum_variant_names)]
         #![allow(non_snake_case)]
         use crate::schemas_wkt::{Duration, Timestamp};
+        use bytes::Bytes;
         use pyo3::prelude::*;
         use pyo3::types::PyBytes;
 
@@ -100,21 +101,21 @@ describe("generatePyclass", () => {
                     field_duration: field_duration.map(Into::into),
                     field_time: field_time.map(Into::into),
                     field_boolean,
-                    field_bytes: data.map(|x| x.as_bytes().to_vec()).unwrap_or_default(),
+                    field_bytes: data.map(|x| Bytes::copy_from_slice(x.as_bytes())).unwrap_or_default(),
                     field_float64,
                     field_uint32,
                     field_string,
                     field_duration_array: field_duration_array.map(Into::into),
                     field_time_array: field_time_array.map(Into::into),
                     field_boolean_array,
-                    field_bytes_array: data.map(|x| x.as_bytes().to_vec()).unwrap_or_default(),
+                    field_bytes_array: data.map(|x| Bytes::copy_from_slice(x.as_bytes())).unwrap_or_default(),
                     field_float64_array,
                     field_uint32_array,
                     field_string_array,
                     field_duration_fixed_array: field_duration_fixed_array.map(Into::into),
                     field_time_fixed_array: field_time_fixed_array.map(Into::into),
                     field_boolean_fixed_array,
-                    field_bytes_fixed_array: data.map(|x| x.as_bytes().to_vec()).unwrap_or_default(),
+                    field_bytes_fixed_array: data.map(|x| Bytes::copy_from_slice(x.as_bytes())).unwrap_or_default(),
                     field_float64_fixed_array,
                     field_uint32_fixed_array,
                     field_string_fixed_array,
