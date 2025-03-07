@@ -22,6 +22,12 @@ int main(int argc, const char* argv[]) {
   options.name = "ws-demo-cpp";
   options.host = "127.0.0.1";
   options.port = 8765;
+  options.callbacks.onSubscribe = [](uint64_t channel_id) {
+    std::cerr << "Subscribed to channel " << channel_id << std::endl;
+  };
+  options.callbacks.onUnsubscribe = [](uint64_t channel_id) {
+    std::cerr << "Unsubscribed from channel " << channel_id << std::endl;
+  };
   foxglove::WebSocketServer server{options};
   std::cerr << "Server listening on port " << server.port() << std::endl;
 

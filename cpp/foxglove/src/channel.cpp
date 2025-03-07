@@ -4,7 +4,7 @@
 namespace foxglove {
 
 Channel::Channel(
-  std::string_view topic, std::string_view messageEncoding, std::optional<Schema> schema
+  const std::string& topic, const std::string& messageEncoding, std::optional<Schema> schema
 )
     : _impl(
         foxglove_channel_create(
@@ -19,6 +19,10 @@ Channel::Channel(
         ),
         foxglove_channel_free
       ) {}
+
+uint64_t Channel::id() const {
+  return foxglove_channel_get_id(_impl.get());
+}
 
 void Channel::log(
   const std::byte* data, size_t dataLen, std::optional<uint64_t> logTime,
