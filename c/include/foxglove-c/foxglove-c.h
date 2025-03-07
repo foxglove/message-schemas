@@ -29,6 +29,22 @@ typedef struct foxglove_channel foxglove_channel;
 
 typedef struct foxglove_websocket_server foxglove_websocket_server;
 
+typedef struct foxglove_server_callbacks {
+  /**
+   * A user-defined value that will be passed to callback functions
+   */
+  const void *context;
+  void (*on_subscribe)(uint64_t channel_id, const void *context);
+  void (*on_unsubscribe)(uint64_t channel_id, const void *context);
+} foxglove_server_callbacks;
+
+typedef struct foxglove_server_options {
+  const char *name;
+  const char *host;
+  uint16_t port;
+  const struct foxglove_server_callbacks *callbacks;
+} foxglove_server_options;
+
 typedef struct foxglove_schema {
   const char *name;
   const char *encoding;
@@ -48,9 +64,7 @@ extern "C" {
  * # Safety
  * `name` and `host` must be null-terminated strings with valid UTF8.
  */
-struct foxglove_websocket_server *foxglove_server_start(const char *name,
-                                                        const char *host,
-                                                        uint16_t port);
+struct foxglove_websocket_server *foxglove_server_start(const struct foxglove_server_options *FOXGLOVE_NONNULL options);
 
 /**
  * Free a server created via `foxglove_server_start`.
@@ -85,6 +99,8 @@ foxglove_channel *foxglove_channel_create(const char *topic,
  * Free a channel created via `foxglove_channel_create`.
  */
 void foxglove_channel_free(foxglove_channel *channel);
+
+uint64_t foxglove_channel_get_id(const foxglove_channel *channel);
 
 /**
  * Log a message on a channel.

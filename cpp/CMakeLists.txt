@@ -26,6 +26,19 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Corrosion)
 
 
+FetchContent_Declare(
+  websocketpp
+  GIT_REPOSITORY https://github.com/zaphoyd/websocketpp.git
+  GIT_TAG 0.8.2
+)
+FetchContent_MakeAvailable(websocketpp)
+
+FetchContent_Declare(asio
+  GIT_REPOSITORY https://github.com/chriskohlhoff/asio.git
+  GIT_TAG asio-1-31-0
+)
+FetchContent_MakeAvailable(asio)
+
 ### C
 
 corrosion_import_crate(MANIFEST_PATH ../c/Cargo.toml CRATES foxglove_c)
@@ -63,6 +76,9 @@ file(GLOB_RECURSE foxglove_test_srcs CONFIGURE_DEPENDS
     "foxglove/tests/*.cpp"
 )
 add_executable(tests "${foxglove_test_srcs}")
+target_compile_definitions(tests PRIVATE ASIO_STANDALONE)
+target_include_directories(tests SYSTEM PRIVATE ${asio_SOURCE_DIR}/asio/include)
+target_include_directories(tests SYSTEM PRIVATE ${websocketpp_SOURCE_DIR})
 set_property(TARGET tests PROPERTY CXX_STANDARD 17)
 set_property(TARGET tests PROPERTY CXX_STANDARD_REQUIRED True)
 target_link_libraries(tests PRIVATE foxglove_cpp_static Catch2::Catch2WithMain)

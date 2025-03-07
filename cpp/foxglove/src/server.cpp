@@ -1,11 +1,35 @@
 #include <foxglove-c/foxglove-c.h>
 #include <foxglove/server.hpp>
 
+namespace {
+
+bool hasAnyCallbacks(const foxglove::WebSocketServerCallbacks& callbacks) {
+  return callbacks.onSubscribe || callbacks.onUnsubscribe;
+}
+
+}  // anonymous namespace
+
 namespace foxglove {
 
 WebSocketServer::WebSocketServer(WebSocketServerOptions options)
-    : _impl(
-        foxglove_server_start(options.name.c_str(), options.host.c_str(), options.port),
+    : _callbacks(options.callbacks)
+    , _impl(
+        foxglove_server_start(&(const foxglove_server_options&)foxglove_server_options{
+          options.name.c_str(),
+          options.host.c_str(),
+          options.port,
+          !hasAnyCallbacks(options.callbacks)
+            ? nullptr
+            : &(const foxglove_server_callbacks&)foxglove_server_callbacks{
+              this,
+              !options.callbacks.onSubscribe ? nullptr : [](uint64_t channel_id, const void* context) {
+                (reinterpret_cast<const WebSocketServer*>(context))->_callbacks.onSubscribe(channel_id);
+              },
+              !options.callbacks.onUnsubscribe ? nullptr : [](uint64_t channel_id, const void* context) {
+                (reinterpret_cast<const WebSocketServer*>(context))->_callbacks.onUnsubscribe(channel_id);
+              },
+            }
+        }),
         foxglove_server_free
       ) {}
 

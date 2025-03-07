@@ -2,12 +2,41 @@
 #![warn(unsafe_op_in_unsafe_fn)]
 #![warn(unsafe_attr_outside_unsafe)]
 
-use std::ffi::{c_char, CStr};
+use std::ffi::{c_char, c_void, CStr};
 use std::mem::ManuallyDrop;
 use std::sync::Arc;
 
+#[repr(C)]
+pub struct FoxgloveServerOptions<'a> {
+    pub name: *const c_char,
+    pub host: *const c_char,
+    pub port: u16,
+    pub callbacks: Option<&'a FoxgloveServerCallbacks>,
+}
+
+#[repr(C)]
+#[derive(Clone)]
+pub struct FoxgloveServerCallbacks {
+    /// A user-defined value that will be passed to callback functions
+    pub context: *const c_void,
+    pub on_subscribe: Option<unsafe extern "C" fn(channel_id: u64, context: *const c_void)>,
+    pub on_unsubscribe: Option<unsafe extern "C" fn(channel_id: u64, context: *const c_void)>,
+    // pub on_client_advertise: Option<unsafe extern "C" fn()>
+    // pub on_message_data: Option<unsafe extern "C" fn(client_channel_id: u32, payload: *const u8, payload_len: usize)>,
+    // pub on_client_unadvertise: Option<unsafe extern "C" fn()>
+    // pub on_get_parameters: Option<unsafe extern "C" fn()>
+    // pub on_set_parameters: Option<unsafe extern "C" fn()>
+    // pub on_parameters_subscribe: Option<unsafe extern "C" fn()>
+    // pub on_parameters_unsubscribe: Option<unsafe extern "C" fn()>
+    // pub on_connection_graph_subscribe: Option<unsafe extern "C" fn()>
+    // pub on_connection_graph_unsubscribe: Option<unsafe extern "C" fn()>
+}
+unsafe impl Send for FoxgloveServerCallbacks {}
+unsafe impl Sync for FoxgloveServerCallbacks {}
+
 pub struct FoxgloveWebSocketServer(Option<foxglove::WebSocketServerBlockingHandle>);
 
+use foxglove::websocket::ServerListener;
 // cbindgen does not actually generate a declaration for this, so we manually write one in
 // after_includes
 pub use foxglove::Channel as FoxgloveChannel;
@@ -29,22 +58,22 @@ pub struct FoxgloveSchema {
 #[unsafe(no_mangle)]
 #[must_use]
 pub unsafe extern "C" fn foxglove_server_start(
-    name: *const c_char,
-    host: *const c_char,
-    port: u16,
+    options: &FoxgloveServerOptions,
 ) -> *mut FoxgloveWebSocketServer {
-    let name = unsafe { CStr::from_ptr(name) }
+    let name = unsafe { CStr::from_ptr(options.name) }
         .to_str()
         .expect("name is invalid");
-    let host = unsafe { CStr::from_ptr(host) }
+    let host = unsafe { CStr::from_ptr(options.host) }
         .to_str()
         .expect("host is invalid");
+    let mut server = foxglove::WebSocketServer::new()
+        .name(name)
+        .bind(host, options.port);
+    if let Some(callbacks) = options.callbacks {
+        server = server.listener(Arc::new(callbacks.clone()))
+    }
     Box::into_raw(Box::new(FoxgloveWebSocketServer(Some(
-        foxglove::WebSocketServer::new()
-            .name(name)
-            .bind(host, port)
-            .start_blocking()
-            .expect("Server failed to start"),
+        server.start_blocking().expect("Server failed to start"),
     ))))
 }
 
@@ -135,6 +164,12 @@ pub extern "C" fn foxglove_channel_free(channel: Option<&mut FoxgloveChannel>) {
     drop(unsafe { Arc::from_raw(channel) });
 }
 
+#[unsafe(no_mangle)]
+pub extern "C" fn foxglove_channel_get_id(channel: Option<&FoxgloveChannel>) -> u64 {
+    let channel = channel.expect("channel is required");
+    u64::from(channel.id())
+}
+
 /// Log a message on a channel.
 ///
 /// # Safety
@@ -165,4 +200,26 @@ pub unsafe extern "C" fn foxglove_channel_log(
             sequence: unsafe { sequence.as_ref() }.copied(),
         },
     );
+}
+
+impl ServerListener for FoxgloveServerCallbacks {
+    fn on_subscribe(
+        &self,
+        _client: foxglove::websocket::Client,
+        channel: foxglove::websocket::ChannelView,
+    ) {
+        if let Some(on_subscribe) = self.on_subscribe {
+            unsafe { on_subscribe(u64::from(channel.id()), self.context) };
+        }
+    }
+
+    fn on_unsubscribe(
+        &self,
+        _client: foxglove::websocket::Client,
+        channel: foxglove::websocket::ChannelView,
+    ) {
+        if let Some(on_unsubscribe) = self.on_unsubscribe {
+            unsafe { on_unsubscribe(u64::from(channel.id()), self.context) };
+        }
+    }
 }
